@@ -31,12 +31,12 @@ PDF 문서 기반 RAG(Retrieval-Augmented Generation) 기술을 활용해 안내
 
 ## 🧠 주요 기능 (Features)
 
-- 📄 **PDF 기반 문서 이해 및 질의응답**
-- 🔎 **Vector Search 기반 지식 검색**
-- 🔧 **문서별 독립 RAG 시스템 (manual / ip_strategy_2025 분리)**
-- 🧩 **Chunk 기반 정교한 검색 최적화**
-- 🚀 **OpenAI GPT-4o-mini 기반 자연어 응답 생성**
-- 🗂 **문단·섹션 태그 자동 부착을 통한 검색 품질 향상**
+- **PDF 기반 문서 이해 및 질의응답**
+- **Vector Search 기반 지식 검색**
+- **문서별 독립 RAG 시스템 (manual / ip_strategy_2025 분리)**
+- **Chunk 기반 정교한 검색 최적화**
+- **OpenAI GPT-4o-mini 기반 자연어 응답 생성**
+- **문단·섹션 태그 자동 부착을 통한 검색 품질 향상**
 
 ---
 
