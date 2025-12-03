@@ -5,7 +5,7 @@
 
 ---
 
-## 📌 프로젝트 개요
+## 프로젝트 개요
 본 프로젝트는 **스타트업 및 중소기업이 실제로 활용할 수 있는 지식재산(IP) 전략·지원정책**을  
 PDF 문서 기반 RAG(Retrieval-Augmented Generation) 기술을 활용해 안내하는 **LLM 챗봇 서비스**입니다.
 
@@ -19,7 +19,7 @@ PDF 문서 기반 RAG(Retrieval-Augmented Generation) 기술을 활용해 안내
 
 ---
 
-## 👥 팀원 소개 (SKN20-3rd-4TEAM)
+## 팀원 소개 (SKN20-3rd-4TEAM)
 | 이름 | 역할 |
 |------|------|
 | **김태빈** | 시스템 설계, RAG 구조 설계 |
@@ -29,7 +29,7 @@ PDF 문서 기반 RAG(Retrieval-Augmented Generation) 기술을 활용해 안내
 
 ---
 
-## 🧠 주요 기능 (Features)
+## 주요 기능 (Features)
 
 - **PDF 기반 문서 이해 및 질의응답**
 - **Vector Search 기반 지식 검색**
@@ -40,7 +40,7 @@ PDF 문서 기반 RAG(Retrieval-Augmented Generation) 기술을 활용해 안내
 
 ---
 
-## 📁 폴더 구조
+## 폴더 구조
 
 ```txt
 SKN20-3rd-4TEAM/
