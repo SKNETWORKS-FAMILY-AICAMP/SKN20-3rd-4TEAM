@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=창업%20IP%20전략%20가이드%20RAG%20챗봇&fontSize=60" />
+</p>
+
 # 🌐 SKN20 3rd Project – 창업 IP 전략 가이드 RAG 챗봇  
 **Team: SKN20-3rd-4TEAM (김태빈 · 정래원 · 최소영 · 최유정)**  
 지식재산(IP) 기반 스타트업/중소기업 창업자를 위한 RAG 기반 정책 안내 챗봇 프로젝트
