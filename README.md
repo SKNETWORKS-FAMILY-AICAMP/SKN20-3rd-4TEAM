@@ -41,26 +41,28 @@ PDF 문서 기반 RAG(Retrieval-Augmented Generation) 기술을 활용해 안내
 ---
 
 ## 📁 폴더 구조
+
+```txt
 SKN20-3rd-4TEAM/
 │
 ├── data/
-│ ├── manual.pdf
-│ └── ip_strategy_2025.pdf
+│   ├── manual.pdf
+│   └── ip_strategy_2025.pdf
 │
 ├── processed_manual/
-│ ├── manual_chunk_001.txt
-│ ├── ...
+│   ├── manual_chunk_001.txt
+│   └── ...
 │
 ├── processed_strategy/
-│ ├── strategy_2025_chunk_001.txt
-│ ├── ...
+│   ├── strategy_2025_chunk_001.txt
+│   └── ...
 │
-├── chroma_db/ # PDF → VectorDB (manual RAG)
-├── strategy_db/ # PDF → VectorDB (strategy RAG)
+├── chroma_db/
+├── strategy_db/
 │
+├── main.py
+├── main_strategy.py
 ├── preprocess_two_files.py
-├── main.py # manual.pdf RAG chatbot
-├── main_strategy.py # ip_strategy_2025.pdf RAG chatbot
 │
-├── .env # API Secret
+├── .env
 └── requirements.txt
