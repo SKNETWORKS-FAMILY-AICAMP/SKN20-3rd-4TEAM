@@ -9,6 +9,7 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_community.document_loaders import TextLoader, DirectoryLoader
 from dotenv import load_dotenv
 
 # 경고메세지 삭제
@@ -160,7 +161,7 @@ print("=" * 60)
 print("1단계: JSON → Document 변환")
 print("=" * 60)
 
-with open("dataset.json", "r", encoding="utf-8") as f:
+with open("data/dataset.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 documents = []
 
@@ -187,15 +188,80 @@ print(f"  → {len([d for d in documents if d.metadata['data_type'] == 'space'])
 
 print(f"\n총 {len(documents)}개의 Document 생성 완료!")
 
+# 추가 TXT 파일들 → Document로 합치기
+
+print("\n" + "=" * 60)
+print("2단계: 추가 TXT → Document 변환")
+print("=" * 60)
+
+# (1) data 폴더 안의 큰 txt 파일들
+plain_txt_files = [
+    ("data/중소기업창업_지원법.txt", "law"),       
+    ("data/failure_cases_all.txt", "cases"), 
+]
+
+for path, dtype in plain_txt_files:
+    if not os.path.exists(path):
+        print(f"  [경고] {path} 파일을 찾을 수 없습니다. (건너뜀)")
+        continue
+
+    print(f"\n▶ TXT 문서 로드 중: {path}")
+    loader = TextLoader(path, encoding="utf-8")
+    txt_docs = loader.load()  
+
+    for d in txt_docs:
+        # 기존 메타데이터에 data_type, source를 붙여줌
+        d.metadata = d.metadata or {}
+        d.metadata["source"] = os.path.basename(path)
+        d.metadata["data_type"] = dtype
+
+        documents.append(d)
+
+    print(f"  → {len(txt_docs)}개 Document 추가 (data_type='{dtype}')")
+
+
+# (2) 압축 풀고 생긴 txt 폴더들
+chunked_txt_dirs = [
+    ("스타트업지원프로그램txt", "program_chunk"),
+    ("지식재산관리매뉴얼txt", "ip_manual_chunk"),
+]
+
+for dir_path, dtype in chunked_txt_dirs:
+    if not os.path.exists(dir_path):
+        print(f"\n  [경고] {dir_path} 폴더를 찾을 수 없습니다. (건너뜀)")
+        continue
+
+    print(f"\n▶ 폴더 내 TXT 로드 중: {dir_path}")
+    loader = DirectoryLoader(
+        dir_path,
+        glob="**/*.txt",
+        loader_cls=TextLoader,
+        loader_kwargs={"encoding": "utf-8"},
+    )
+    dir_docs = loader.load()
+
+    for d in dir_docs:
+        d.metadata = d.metadata or {}
+        d.metadata["source"] = d.metadata.get("source", dir_path)
+        d.metadata["data_type"] = dtype
+        d.metadata["file_name"] = os.path.basename(d.metadata["source"])
+
+        documents.append(d)
+
+    print(f"  → {len(dir_docs)}개 Document 추가 (data_type='{dtype}')")
+
+print(f"\n✅ JSON + TXT 합산 Document 총 개수: {len(documents)}개")
+
+
 # # documents.pkl 저장 (백업)
 # with open("documents.pkl", "wb") as f:
 #     pickle.dump(documents, f)
 # print(" documents.pkl 저장 완료 (백업)")
 
 
-# 2. 청킹
+# 3. 청킹
 print("\n" + "=" * 60)
-print("2단계: 문서 청킹")
+print("3단계: 문서 청킹 (타입별 분기)")
 print("=" * 60)
 
 text_splitter = RecursiveCharacterTextSplitter(
@@ -204,11 +270,28 @@ text_splitter = RecursiveCharacterTextSplitter(
     separators=['\n\n', '\n', '.', ',', ' ', '']
 )
 
-print(f"\n청킹 중... (원본: {len(documents)}개)")
-chunked_documents = text_splitter.split_documents(documents)
-print(f" 청킹 완료: {len(chunked_documents)}개로 분할됨")
+final_docs = []
 
-# 청킹된 문서 저장
+print(f"\n청킹 대상 원본 Document 수: {len(documents)}개")
+
+for d in documents:
+    dtype = d.metadata.get("data_type", "")
+
+    if dtype == "program_chunk":
+        # 기존zip파일은 그대로 사용
+        final_docs.append(d)
+    elif dtype == "ip_manual_chunk":
+        # 기존zip파일은 그대로 사용
+        final_docs.append(d)
+    else:
+        # 나머지 문서들은 청킹 수행
+        chunks = text_splitter.split_documents([d])
+        final_docs.extend(chunks)
+
+print(f" 최종 청킹 결과: {len(final_docs)}개 Document")
+
+# 청킹 파일 저장
 with open("chunked_documents.pkl", "wb") as f:
-    pickle.dump(chunked_documents, f)
+    pickle.dump(final_docs, f)
+
 print(" chunked_documents.pkl 저장 완료")
