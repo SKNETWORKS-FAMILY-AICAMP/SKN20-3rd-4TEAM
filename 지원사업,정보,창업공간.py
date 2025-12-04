@@ -222,8 +222,8 @@ for path, dtype in plain_txt_files:
 
 # (2) 압축 풀고 생긴 txt 폴더들
 chunked_txt_dirs = [
-    ("스타트업지원프로그램txt", "program_chunk"),
-    ("지식재산관리매뉴얼txt", "ip_manual_chunk"),
+    ("data/스타트업지원프로그램txt", "program_chunk"),
+    ("data/지식재산관리매뉴얼txt", "ip_manual_chunk"),
 ]
 
 for dir_path, dtype in chunked_txt_dirs:
