@@ -259,16 +259,50 @@ print(f"\n✅ JSON + TXT 합산 Document 총 개수: {len(documents)}개")
 # print(" documents.pkl 저장 완료 (백업)")
 
 
-# 3. 청킹
+# 3. 청킹 (타입별 세밀 튜닝)
 print("\n" + "=" * 60)
-print("3단계: 문서 청킹 (타입별 분기)")
+print("3단계: 문서 청킹")
 print("=" * 60)
 
-text_splitter = RecursiveCharacterTextSplitter(
+# 타입별 splitter 설정
+default_splitter = RecursiveCharacterTextSplitter(
     chunk_size=300,
     chunk_overlap=50,
     separators=['\n\n', '\n', '.', ',', ' ', '']
 )
+
+splitter_map = {
+    # 사업 공고
+    "announcement": RecursiveCharacterTextSplitter(
+        chunk_size=400,
+        chunk_overlap=80,
+        separators=['\n\n', '\n', '.', ',', ' ', '']
+    ),
+    # 통계/연구
+    "stat": RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=80,
+        separators=['\n\n', '\n', '.', ',', ' ', '']
+    ),
+    # 창업 공간
+    "space": RecursiveCharacterTextSplitter(
+        chunk_size=200,
+        chunk_overlap=30,
+        separators=['\n\n', '\n', '.', ',', ' ', '']
+    ),
+    # 법령
+    "law": RecursiveCharacterTextSplitter(
+        chunk_size=700,
+        chunk_overlap=120,
+        separators=['\n\n', '\n', '제', '.', ' ', '']
+    ),
+    # 실패 사례
+    "cases": RecursiveCharacterTextSplitter(
+        chunk_size=450,
+        chunk_overlap=70,
+        separators=['\n\n', '\n', '.', ',', ' ', '']
+    ),
+}
 
 final_docs = []
 
@@ -277,16 +311,15 @@ print(f"\n청킹 대상 원본 Document 수: {len(documents)}개")
 for d in documents:
     dtype = d.metadata.get("data_type", "")
 
-    if dtype == "program_chunk":
-        # 기존zip파일은 그대로 사용
+    # 이미 청킹된 zip 데이터는 그대로 사용
+    if dtype in ("program_chunk", "ip_manual_chunk"):
         final_docs.append(d)
-    elif dtype == "ip_manual_chunk":
-        # 기존zip파일은 그대로 사용
-        final_docs.append(d)
-    else:
-        # 나머지 문서들은 청킹 수행
-        chunks = text_splitter.split_documents([d])
-        final_docs.extend(chunks)
+        continue
+
+    # 2) 타입별 splitter 선택
+    splitter = splitter_map.get(dtype, default_splitter)
+    chunks = splitter.split_documents([d])
+    final_docs.extend(chunks)
 
 print(f" 최종 청킹 결과: {len(final_docs)}개 Document")
 
@@ -295,3 +328,21 @@ with open("chunked_documents.pkl", "wb") as f:
     pickle.dump(final_docs, f)
 
 print(" chunked_documents.pkl 저장 완료")
+
+
+# # (옵션) 타입별 샘플 몇 개만 확인해보기
+# print("\n=== 샘플 청킹 미리보기 ===")
+
+# def preview_by_type(target_type, n=2):
+#     print(f"\n[타입: {target_type}] 샘플 {n}개")
+#     count = 0
+#     for doc in final_docs:
+#         if doc.metadata.get("data_type") == target_type:
+#             count += 1
+#             print(f"\n--- {target_type} chunk #{count} (길이: {len(doc.page_content)}) ---")
+#             print(doc.page_content[:300], "...")
+#             if count >= n:
+#                 break
+
+# for t in ["announcement", "law", "cases"]:
+#     preview_by_type(t)

@@ -14,14 +14,18 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+import pickle
 
-# 벡터DB 로드 
+with open("chunked_documents.pkl", "rb") as f:
+    final_docs = pickle.load(f)
+
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 
-vectorstore = Chroma(
-    persist_directory="./chroma_startup_law",
-    collection_name="startup_law_rag",
-    embedding_function=embedding_model,
+vectorstore = Chroma.from_documents(
+    documents=final_docs,
+    embedding=embedding_model,
+    collection_name="startup_support_rag",
+    persist_directory="./chroma_startup_support",
 )
 
 retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
