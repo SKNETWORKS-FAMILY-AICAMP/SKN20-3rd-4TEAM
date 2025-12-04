@@ -1,8 +1,4 @@
-<div align="center">
-
-![header](https://capsule-render.vercel.app/api?type=waving&color=gradient&height=300&section=header&text=SKN20%203rd-Project%20Team%202&fontSize=60)
-
-<div align="center">
+![header](https://capsule-render.vercel.app/api?type=waving&color=gradient&height=300&section=header&text=SKN20%203rd-Project%20Team%204&fontSize=60)
 # SKN20-3rd-4TEAM
 
 ### 🤖 3차 프로젝트: 창업자를 위한 지식재산(IP)·지원정책 정보 제공 RAG 챗봇 시스템
