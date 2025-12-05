@@ -71,7 +71,7 @@ vectorstore = Chroma.from_documents(
     embedding=embedding_model,
     collection_name='basic_rag_collection',
     persist_directory='./chroma_db',
-    ids=doc_ids # 처음 한 번만 시행
+    #ids=doc_ids # 처음 한 번만 시행
 )
 
 # ============================================
