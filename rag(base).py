@@ -6,9 +6,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
 
-## 실행 전 반드시 vector.py를 실행하여 벡터 DB를 만들어 주세요!
+## 실행 전 반드시 main_chunking, build_vector_db.py를 실행하여 벡터 DB를 만들어 주세요!
 
 warnings.filterwarnings("ignore")
 load_dotenv()
@@ -16,6 +15,7 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("OPENAI_API_KEY 없음! .env 확인해줘")
+
 
 # 벡터DB 로드
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
@@ -26,13 +26,20 @@ vectorstore = Chroma(
     embedding_function=embedding_model,
 )
 
+try:
+    all_data = vectorstore.get()
+    ids = all_data.get("ids", [])
+    print(f"✅ 벡터DB 로드 완료 / 총 벡터 개수: {len(ids)}")
+except Exception as e:
+    print("⚠ 벡터DB 상태 확인 중 에러:", e)
+
 retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
-# 리브리버 값을 일단 5->10으로 늘려서 다양한 문서 가져오게 했습니다.(변경해도 됩니다.)
+# 리트리버 값을 5 -> 10으로 늘려 다양한 문서 가져오게 함 (필요시 줄여도 됨)
 
 # LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# 기본 base Rag 프롬포트(대부분 질문이 일로감)
+# 기본 base RAG 프롬프트 (대부분 질문이 이쪽으로 감)
 rag_prompt = ChatPromptTemplate.from_messages([
     ("system", """
 당신은 예비·초기 창업자를 도와주는 '창업 지원 통합 AI 어시스턴트'입니다.
@@ -119,13 +126,12 @@ recommend_prompt = ChatPromptTemplate.from_messages([
 
 [출력 형식]
 ■ ✅ 추천 사업명
-■ 🎯 왜 이 사용자에게 적합한지
-■ 💰 지원 내용(자금/공간/교육 중 무엇인지 명확히)
+■ 🎯 추천 이유
+■ 💰 지원 내용
 ■ 📝 신청 대상 요약
 ■ ⏳ 접수 기간
 ■ ⚠️ 주의사항
 ■ 🔗 추가 확인 필요 여부
-'이 사업이 자금/공간/기술/교육 중 무엇을 중심으로 지원하는지도 한 줄로 정리해 주세요.'
 
 마지막 줄에 반드시:
 [참고: 지원사업 공고]
@@ -141,10 +147,24 @@ recommend_prompt = ChatPromptTemplate.from_messages([
 """)
 ])
 
+# Query Transformation (최소 버전)
+#  → 검색 정확도 올리기 위한 전처리 단계
+qt_prompt = ChatPromptTemplate.from_template("""
+다음 사용자 질문을 벡터 검색에 적합한 '핵심 키워드 중심 문장'으로 바꾸세요.
+불필요한 말은 제거하고, 핵심 조건만 남기세요.
+
+원본 질문: {question}
+
+변환된 검색용 문장:
+""")
+
+qt_chain = qt_prompt | llm | StrOutputParser()
 
 # 프롬프트 선택 함수
 def choose_prompt(question: str):
-    recommend_keywords = ["추천", "맞는", "신청할 수 있는", "지원해주는", "사업 알려줘"]
+    # 추천 관련 키워드
+    recommend_keywords = ["추천", "맞는", "신청할 수 있는", "지원해주는", "사업 알려줘", "혜택", "지원금", "지원사업"]
+    # 법령 관련 키워드
     law_keywords = ["정의", "자격", "요건", "지원법", "법에서", "법상", "제도"]
 
     if any(k in question for k in recommend_keywords):
@@ -157,11 +177,14 @@ def choose_prompt(question: str):
 def format_docs(docs):
     return "\n\n---\n\n".join(d.page_content for d in docs)
 
-# 테스트 (test_qeuestions 안에 있는 질문만 수정하며)
+#테스트 (test_questions 안에 있는 질문만 수정)
 if __name__ == "__main__":
 
+    print("✅ rag(base).py 실행 시작")
+
     test_questions = [
-        "제가 25살이고 창업을 하려는데 나라에서 받을 수 있는 혜택이 무엇이 있나요?",
+        "AI 기술을 활용해서 창업을 준비중인데 정보를 얻을 수 있는 교육이 있을까요? 그리고 창업 준비를 할 수 있는 공간대여가 서비스를 이용할 수 있는지 궁금합니다."
+        "AI 챗봇을 활용하여 창업을 준비 중인데, 지원 가능한 사업이 있는지 알려주세요. 그리고 창업 준비를 위한 절차를 알려주세요",
     ]
 
     for i, q in enumerate(test_questions, 1):
@@ -169,22 +192,27 @@ if __name__ == "__main__":
         print("=" * 80)
         print(f"[테스트 {i}] 질문: {q}")
 
-        prompt = choose_prompt(q)
-        chain = (
-            {
-                "context": retriever | format_docs,
-                "question": RunnablePassthrough(),
-            }
-            | prompt
-            | llm
-            | StrOutputParser()
-        )
+        # Query Transformation 적용
+        transformed_q = qt_chain.invoke({"question": q})
+        print(f"[QT 변환된 검색용 질문] {transformed_q}")
 
-        answer = chain.invoke(q)
+        # 프롬프트 선택 (원본 질문 기준)
+        prompt = choose_prompt(q)
+
+        # 변환된 질문으로 문서 검색
+        docs = retriever.invoke(transformed_q)
+        context = format_docs(docs)
+
+        # 선택된 프롬프트로 최종 답변 생성
+        answer_chain = prompt | llm | StrOutputParser()
+        answer = answer_chain.invoke({
+            "context": context,
+            "question": q
+        })
 
         print("\n[답변]")
         print(answer)
 
-        docs = retriever.invoke(q)
+        # 디버그: 어떤 타입 문서를 참조했는지
         types = {d.metadata.get("data_type", "unknown") for d in docs}
         print(f"\n[참조된 data_type들] {types}")

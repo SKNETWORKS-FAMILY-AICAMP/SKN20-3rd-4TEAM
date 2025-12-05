@@ -1,4 +1,0 @@
-konlpy
-sentence-transformers
-langchain langchain-core
-rank_bm25
