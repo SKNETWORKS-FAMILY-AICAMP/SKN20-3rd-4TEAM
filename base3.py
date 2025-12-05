@@ -111,14 +111,12 @@ class HybridRetriever(BaseRetriever):
     k: int = 3  #반환할 문서 개수
     dense_weight: float = 0.7    # Dense 가중치
 
-    def __init__(self, dense_retriever, documents, bm25, k=3, dense_weight=0.7,**kwargs: Any):
-        super().__init__(
-                    dense_retriever=dense_retriever, 
-                    documents=documents, 
-                    bm25=bm25, 
-                    k=k, 
-                    dense_weight=dense_weight,
-                    **kwargs)
+    def __init__(self, dense_retriever, documents, bm25, k=3, dense_weight=0.7):
+        self.dense_retriever = dense_retriever
+        self.documents = documents
+        self.bm25 = bm25
+        self.k = k
+        self.dense_weight = dense_weight
         
     def _get_relevant_documents(self,query: str, *, run_manager: Any,) -> List[Document]:
         sparse_weight = 1 - self.dense_weight
