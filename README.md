@@ -15,19 +15,19 @@
 <table>
   <tr>
     <td align="center">
-      <img src="img/김태빈img.jpeg" width="150" alt="김태빈"/><br/>
+      <img src="img/김태빈img.jpeg" width="180" alt="김태빈"/><br/>
       <b>김태빈</b>
     </td>
     <td align="center">
-      <img src="img/정래원img.jpeg" width="150" alt="정래원"/><br/>
+      <img src="img/정래원img.jpeg" width="180" alt="정래원"/><br/>
       <b>정래원</b>
     </td>
     <td align="center">
-      <img src="img/최소영img.jpeg" width="150" alt="최소영"/><br/>
+      <img src="img/최소영img.jpeg" width="180" alt="최소영"/><br/>
       <b>최소영</b>
     </td>
     <td align="center">
-      <img src="img/최유정img.jpeg" width="150" alt="최유정"/><br/>
+      <img src="img/최유정img.jpeg" width="180" alt="최유정"/><br/>
       <b>최유정</b>
     </td>
   </tr>
