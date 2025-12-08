@@ -19,7 +19,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # multi_copy_llm추가.py에서 필요한 함수들을 임포트
 try:
-    from multi_copy_llm추가 import (
+    from rag_base_multi import (
         multi_query_rag_with_qt,
     )
 except ImportError:
