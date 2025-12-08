@@ -435,24 +435,32 @@ with col_main:
                 # RAG 호출
                 with st.spinner(""):
                     try:
-                         answer_text = multi_query_rag_with_qt(user_input, top_k=10, similarity_threshold=0.2)
+                        result = multi_query_rag_with_qt(user_input, top_k=10, similarity_threshold=0.2)
                         
+                        # result 타입 확인
+                        if isinstance(result, tuple):
+                            answer_text = result[0]
+                            sources = result[1] if len(result) > 1 else []
+                        else:
+                            answer_text = str(result)
+                            sources = []
+                            
                     except Exception as e:
                         answer_text = f"오류 발생: {str(e)}"
                         sources = []
-                
-                # 어시스턴트 메시지 추가 (참고자료 제외)
+
+                # 어시스턴트 메시지 추가
                 st.session_state["messages"].append({
                     "role": "assistant", 
                     "content": answer_text,
-                    "sources":  []
+                    "sources": sources  # ← 변경!
                 })
-                
+
                 # 통합 히스토리에 저장
                 qa_pair = {
                     "question": user_input,
                     "answer": answer_text,
-                    "sources":  []
+                    "sources": sources  # ← 변경!
                 }
                 st.session_state["all_history"].append(qa_pair)
                 
