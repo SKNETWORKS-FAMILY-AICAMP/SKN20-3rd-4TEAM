@@ -1,8 +1,9 @@
 """
 SKN20-3rd-4TEAM 고급 창업 가이드 챗봇 UI (멀티쿼리 + LLM 관련성 검증)
 - Streamlit 기반 프론트엔드
-- 백엔드: multi copy_llm추가.py의 고급 RAG 로직 활용
+- 백엔드: multi_copy_llm추가.py의 고급 RAG 로직 활용
 - 특징: 멀티쿼리, 유사도 필터링, LLM 관련성 검증, Fallback LLM
+- 디자인: 데모 시나리오 스타일
 """
 import streamlit as st
 import base64
@@ -25,7 +26,7 @@ except ImportError:
     try:
         # 파일명이 다를 수 있으니 다시 시도
         import importlib.util
-        spec = importlib.util.spec_from_file_location("multi_llm", "multi copy_llm추가.py")
+        spec = importlib.util.spec_from_file_location("multi_llm", "multi_copy_llm추가.py")
         multi_llm = importlib.util.module_from_spec(spec)
         sys.modules["multi_llm"] = multi_llm
         spec.loader.exec_module(multi_llm)
@@ -39,80 +40,266 @@ except ImportError:
 # 페이지 기본 설정
 # =========================
 st.set_page_config(
-    page_title="고급 창업 가이드 챗봇",
+    page_title="Startup-Guide-Bot",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 
 # =========================
-# 배경 이미지 + CSS 설정
+# CSS 스타일링 (데모 시나리오 스타일)
 # =========================
-def set_background(image_path: str):
-    """배경 이미지 설정 (파일이 없으면 그래디언트 적용)"""
-    if not os.path.exists(image_path):
-        st.markdown(
-            """
-            <style>
-            .stApp {
-                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            }
-            .stMarkdown, .stText, h1, h2, h3, h4, h5, h6 {
-                color: #ffffff !important;
-            }
-            div.stButton > button {
-                background-color: #667eea !important;
-                color: white !important;
-                border: none !important;
-                border-radius: 8px !important;
-                padding: 10px 16px !important;
-            }
-            div.stButton > button:hover {
-                background-color: #5568d3 !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        return
-
-    try:
-        encoded = base64.b64encode(Path(image_path).read_bytes()).decode()
-        st.markdown(
-            f"""
-            <style>
-            .stApp {{
-                background-image: 
-                    linear-gradient(rgba(30, 60, 114, 0.8), rgba(42, 82, 152, 0.8)),
-                    url("data:image/jpg;base64,{encoded}");
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-                color: #ffffff;
-            }}
-            .stMarkdown, .stText, h1, h2, h3, h4, h5, h6 {{
-                color: #ffffff !important;
-            }}
-            div.stButton > button {{
-                background-color: #667eea !important;
-                color: white !important;
-                border: none !important;
-                border-radius: 8px !important;
-                padding: 10px 16px !important;
-            }}
-            div.stButton > button:hover {{
-                background-color: #5568d3 !important;
-            }}
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-    except Exception as e:
-        st.warning(f"배경 이미지 로드 실패: {e}")
-
-
-set_background("img/Start-up-post.jpg")
+st.markdown("""
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    .stApp {
+        background-color: #f5f5f7;
+    }
+    
+    /* 헤더 */
+    .header-container {
+        background: white;
+        padding: 15px 30px;
+        border-bottom: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .logo {
+        font-size: 20px;
+        font-weight: 700;
+        color: #5b5bff;
+    }
+    
+    /* 메인 컨테이너 */
+    .main-container {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 20px;
+        padding: 20px;
+        height: calc(100vh - 80px);
+    }
+    
+    /* 왼쪽 사이드바 */
+    .sidebar-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e5e5e5;
+        overflow-y: auto;
+    }
+    
+    .sidebar-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #5b5bff;
+    }
+    
+    .menu-item {
+        background: #f5f5f7;
+        border: 2px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .menu-item:hover {
+        border-color: #5b5bff;
+        background: #f0f0ff;
+    }
+    
+    .menu-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .menu-desc {
+        font-size: 12px;
+        color: #999;
+        line-height: 1.4;
+    }
+    
+    /* 채팅 컨테이너 */
+    .chat-container {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e5e5;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: white;
+        padding: 20px;
+        border-bottom: 1px solid #e5e5e5;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .chat-header-status {
+        width: 10px;
+        height: 10px;
+        background: #31a24c;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .chat-header-title {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .chat-header-subtitle {
+        font-size: 12px;
+        color: #999;
+        margin-left: auto;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+    }
+    
+    .message {
+        margin-bottom: 16px;
+    }
+    
+    .message-bot {
+        display: flex;
+        gap: 12px;
+    }
+    
+    .message-bot .avatar {
+        width: 32px;
+        height: 32px;
+        background: #5b5bff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    
+    .message-content {
+        background: #f0f0f5;
+        padding: 12px 16px;
+        border-radius: 8px;
+        max-width: 80%;
+    }
+    
+    .message-user {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+    
+    .message-user .message-content {
+        background: #5b5bff;
+        color: white;
+    }
+    
+    /* 참조 문서 */
+    .references {
+        background: #f9f9fb;
+        border-top: 1px solid #e5e5e5;
+        padding: 12px 16px;
+        border-radius: 0 0 8px 8px;
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .reference-item {
+        padding: 4px 0;
+    }
+    
+    .reference-label {
+        display: inline-block;
+        background: #e8e8f5;
+        color: #5b5bff;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-right: 6px;
+        font-weight: 600;
+        font-size: 11px;
+    }
+    
+    /* 입력창 */
+    .chat-input-container {
+        padding: 20px;
+        border-top: 1px solid #e5e5e5;
+        background: white;
+        display: flex;
+        gap: 8px;
+    }
+    
+    .chat-input {
+        flex: 1;
+    }
+    
+    /* 버튼 */
+    .send-button {
+        width: 40px;
+        height: 40px;
+        background: #5b5bff;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .send-button:hover {
+        background: #4a4ae5;
+        transform: scale(1.05);
+    }
+    
+    /* 스크롤 */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #999;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 
 # =========================
@@ -121,155 +308,153 @@ set_background("img/Start-up-post.jpg")
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
-if "show_details" not in st.session_state:
-    st.session_state["show_details"] = False
-
-
-# =========================
-# 상단 타이틀
-# =========================
-st.markdown(
-    """
-    <div style='text-align:center; margin-bottom:30px;'>
-        <h1 style='margin-bottom:10px;'>🚀 고급 창업 가이드 챗봇</h1>
-        <p style='font-size:16px;'>멀티쿼리 + 관련성 검증으로 더 정확한 답변을</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# =========================
-# 예시 질문
-# =========================
-st.markdown("### 🔥 추천 질문")
-example_questions = [
-    "서울에서 AI 기반 스타트업을 할 때 받을 수 있는 지원사업은?",
-    "창업 초기 자금이 부족할 때 어떻게 해야 할까?",
-    "기술 창업자를 위한 멘토링 프로그램이 있나요?",
-]
-
-cols = st.columns(3)
-for i, q in enumerate(example_questions):
-    with cols[i]:
-        if st.button(q, key=f"example_{i}", use_container_width=True):
-            st.session_state["pending_question"] = q
-            st.rerun()
-
-st.markdown("---")
-
-# =========================
-# 사용 가이드
-# =========================
-with st.expander("💡 질문하는 방법"):
-    st.markdown("""
-    **이 앱의 장점:**
-    - 🔄 같은 질문을 다양한 관점으로 검색
-    - ✅ 검색된 문서가 실제 질문과 관련있는지 검증
-    - 🔀 관련 문서가 없으면 LLM 자체 지식으로 답변
-    
-    **질문 팁:**
-    - 구체적인 상황을 설명하면 더 정확한 답변
-    - 예: "25세 AI 개발자인데 서울에서 창업하려면?"
-    - 기본 앱에서 만족스럽지 못한 답변을 이 앱에서 다시 물어보기
-    """)
-
-# =========================
-# 채팅 영역
-# =========================
-st.markdown("### 💬 대화")
-
-# 사이드바 - 대화 내역 (최신 10개만 표시)
-with st.sidebar:
-    st.markdown("### 📋 최근 질문 내역")
-    
-    if st.session_state["messages"]:
-        # 모든 질문을 찾고, 최신 10개만 필터링
-        user_questions = [msg for msg in st.session_state["messages"] if msg["role"] == "user"]
-        total_questions = len(user_questions)
-        recent_questions = user_questions[-10:]  # 최신 10개만
-        
-        if user_questions:
-            st.markdown(f"**전체: {total_questions}개 | 표시: {len(recent_questions)}개**")
-            st.divider()
-            
-            # 역순으로 표시 (최신 질문이 위에)
-            for idx, msg in enumerate(reversed(recent_questions), 1):
-                display_text = f"{msg['content'][:30]}..." if len(msg['content']) > 30 else msg['content']
-                st.markdown(f"<span style='color: #e0e0e0; font-size: 11px;'>**Q{total_questions-idx+1}:** {display_text}</span>", unsafe_allow_html=True)
-                st.write("")  # 간격
-            
-            if total_questions > 10:
-                st.caption(f"⬇️ 이전 {total_questions - 10}개 질문은 보관 중...")
-        
-        if st.button("🗑️ 대화 초기화", use_container_width=True):
-            st.session_state["messages"] = []
-            st.rerun()
-    else:
-        st.markdown("<span style='color: #999999;'>아직 질문이 없습니다.</span>", unsafe_allow_html=True)
-
-# 최신 메시지 표시
-if st.session_state["messages"]:
-    last_user_msg_idx = None
-    for i in range(len(st.session_state["messages"]) - 1, -1, -1):
-        if st.session_state["messages"][i]["role"] == "user":
-            last_user_msg_idx = i
-            break
-    
-    if last_user_msg_idx is not None:
-        for i in range(last_user_msg_idx, len(st.session_state["messages"])):
-            msg = st.session_state["messages"][i]
-            with st.chat_message(msg["role"], avatar="🧑" if msg["role"] == "user" else "🤖"):
-                st.markdown(msg["content"])
-
-
-# =========================
-# 입력창 + 고급 RAG 연동
-# =========================
-user_input = st.chat_input("질문을 입력해주세요...", key="chat_input")
-
-if "pending_question" in st.session_state and st.session_state["pending_question"]:
-    user_input = st.session_state["pending_question"]
+if "pending_question" not in st.session_state:
     st.session_state["pending_question"] = None
 
-if user_input:
-    # 유저 메시지 추가
-    st.session_state["messages"].append({"role": "user", "content": user_input})
-    with st.chat_message("user", avatar="🧑"):
-        st.markdown(user_input)
-
-    # 고급 RAG 백엔드 호출
-    with st.chat_message("assistant", avatar="🤖"):
-        with st.spinner("🔍 멀티쿼리 검색 + 관련성 검증 중..."):
-            try:
-                answer_text, sources = multi_query_rag_with_qt(user_input, top_k=10, similarity_threshold=0.3)
-                
-                # 메인 답변
-                st.markdown(answer_text)
-                
-                # 참고 문서
-                if sources:
-                    with st.expander("📚 참고 자료"):
-                        for j, source in enumerate(sources, 1):
-                            st.markdown(f"- {source}")
-                else:
-                    st.info("💡 **LLM 자체 지식으로 답변했습니다.** (관련 문서가 충분하지 않았습니다)")
-                
-            except Exception as e:
-                error_msg = f"❌ 오류 발생: {str(e)}"
-                st.error(error_msg)
-                answer_text = error_msg
-
-    # 세션에 저장
-    st.session_state["messages"].append({"role": "assistant", "content": answer_text})
+# 통합 히스토리
+if "all_history" not in st.session_state:
+    st.session_state["all_history"] = []
 
 
 # =========================
-# 하단 정보
+# 헤더
 # =========================
-st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #cccccc; font-size: 12px;'>
-    <p>고급 창업 가이드 챗봇 | 멀티쿼리 + LLM 검증 기반</p>
-    <p>더 정확한 답변이 필요하면 이 앱을 사용하세요!</p>
-</div>
-""", unsafe_allow_html=True)
+    <div class="header-container">
+        <div class="logo">💬 Startup-Guide-Bot</div>
+        <div style="text-align: right; font-size: 12px; color: #999;">
+            <span style="color: #31a24c;">●</span> Online | Powered by GPT-4o-mini
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# =========================
+# 메인 레이아웃
+# =========================
+col_left, col_main = st.columns([0.25, 0.75], gap="medium")
+
+# 왼쪽 사이드바
+with col_left:
+    # 추천 질문 버튼들
+    st.markdown("<div style='font-size: 12px; color: #999; margin-bottom: 8px;'>💡 추천 질문</div>", unsafe_allow_html=True)
+    
+    col_cat1, col_cat2 = st.columns(2, gap="small")
+    with col_cat1:
+        if st.button("👥 창업자\n요건", key="btn_startup_req", use_container_width=True):
+            st.session_state["user_input"] = "창업자의 정의가 뭐예요?"
+            st.rerun()
+    with col_cat2:
+        if st.button("📘 IP\n가이드", key="btn_ip_guide", use_container_width=True):
+            st.session_state["user_input"] = "2025년 IP 전략의 주요 내용이 뭐예요?"
+            st.rerun()
+    
+    if st.button("💰 지원사업\n비교", key="btn_support_program", use_container_width=True):
+        st.session_state["user_input"] = "지원사업별 차이가 뭐예요?"
+        st.rerun()
+    
+    st.divider()
+    
+    # 통합 히스토리 섹션
+    st.markdown("""
+        <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px;">
+        📌 전체 질문 히스토리
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if not st.session_state["all_history"]:
+        st.info("아직 질문이 없습니다")
+    else:
+        for i, item in enumerate(reversed(st.session_state["all_history"]), 1):
+            with st.expander(f"Q{len(st.session_state['all_history'])-i+1}: {item['question'][:25]}...", expanded=False):
+                st.write(item["question"])
+                if item.get("sources"):
+                    st.caption("참고자료: " + ", ".join(item["sources"]))
+
+# 오른쪽 채팅
+with col_main:
+    # 채팅 헤더
+    st.markdown("""
+        <div class="chat-header">
+            <div class="chat-header-status"></div>
+            <div class="chat-header-title">Startup-Guide-Bot</div>
+            <div class="chat-header-subtitle">Powered by GPT-4o-mini</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # 채팅 메시지
+    chat_container = st.container(border=False)
+    with chat_container:
+        if st.session_state["messages"]:
+            for msg in st.session_state["messages"]:
+                if msg["role"] == "user":
+                    st.markdown(f"""
+                        <div class="message message-user">
+                            <div class="message-content">{msg['content']}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    content = msg['content']
+                    sources = msg.get('sources', [])
+                    
+                    st.markdown(f"""
+                        <div class="message message-bot">
+                            <div class="avatar">⚙️</div>
+                            <div>
+                                <div class="message-content">{content}</div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # 참고자료를 expander로 표시
+                    if sources:
+                        with st.expander("📎 참고 자료 보기"):
+                            for source in sources:
+                                st.caption(f"• {source}")
+        else:
+            st.markdown("""
+                <div style="text-align: center; padding: 40px; color: #ccc;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">💬</div>
+                    <div>메시지를 입력하세요...</div>
+                </div>
+            """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # 입력창
+    cols = st.columns([1, 0.08], gap="small")
+    with cols[0]:
+        user_input = st.text_input("메시지를 입력하세요...", label_visibility="collapsed", key="user_input")
+    
+    with cols[1]:
+        if st.button("➤", key="send_btn", use_container_width=True):
+            if user_input:
+                # 유저 메시지 추가
+                st.session_state["messages"].append({"role": "user", "content": user_input})
+                
+                # RAG 호출
+                with st.spinner(""):
+                    try:
+                        answer_text, sources = multi_query_rag_with_qt(user_input, top_k=10, similarity_threshold=0.2)
+                        
+                    except Exception as e:
+                        answer_text = f"오류 발생: {str(e)}"
+                        sources = []
+                
+                # 어시스턴트 메시지 추가 (참고자료 제외)
+                st.session_state["messages"].append({
+                    "role": "assistant", 
+                    "content": answer_text,
+                    "sources": sources if sources else []
+                })
+                
+                # 통합 히스토리에 저장
+                qa_pair = {
+                    "question": user_input,
+                    "answer": answer_text,
+                    "sources": sources if sources else []
+                }
+                st.session_state["all_history"].append(qa_pair)
+                
+                st.rerun()
+
