@@ -518,21 +518,6 @@ if last_user_msg_idx is not None:
 
 ---
 
-## 👥 팀 소개
-
-<div align="center">
-
-| <img src="img/김태빈img.jpeg" width="150" alt="김태빈"/> | <img src="img/정래원img.jpeg" width="150" alt="정래원"/> | <img src="img/최소영img.jpeg" width="150" alt="최소영"/> | <img src="img/최유정img.jpeg" width="150" alt="최유정"/> |
-|:---:|:---:|:---:|:---:|
-| **김태빈** | **정래원** | **최소영** | **최유정** |
-| 데이터 수집 & 전처리 | RAG 파이프라인 설계 | 프롬프트 엔지니어링 | UI/UX 개발 |
-| PDF 파싱 로직 구현 | 벡터DB 최적화 | 질문 유형별 프롬프트 설계 | Streamlit 인터페이스 |
-| 실패 사례 구조화 | 청킹 전략 수립 | Query Transformation | 사용자 경험 개선 |
-
-</div>
-
----
-
 ## 🎯 프로젝트 성과
 
 ### 기술적 성과
