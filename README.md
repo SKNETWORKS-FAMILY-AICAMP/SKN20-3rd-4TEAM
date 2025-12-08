@@ -10,22 +10,30 @@
 
 ## 💻 팀 소개
 
+<div align="center">
+
 <table>
   <tr>
     <td align="center">
-      <img src="https://github.com/user-attachments/assets/circle-user" width="100"/><br/>김태빈
+      <img src="img/김태빈img.jpeg" width="180" alt="김태빈"/><br/>
+      <b>김태빈</b>
     </td>
     <td align="center">
-      <img src="https://github.com/user-attachments/assets/circle-user" width="100"/><br/>정래원
+      <img src="img/정래원img.jpeg" width="180" alt="정래원"/><br/>
+      <b>정래원</b>
     </td>
     <td align="center">
-      <img src="https://github.com/user-attachments/assets/circle-user" width="100"/><br/>최소영
+      <img src="img/최소영img.jpeg" width="180" alt="최소영"/><br/>
+      <b>최소영</b>
     </td>
     <td align="center">
-      <img src="https://github.com/user-attachments/assets/circle-user" width="100"/><br/>최유정
+      <img src="img/최유정img.jpeg" width="180" alt="최유정"/><br/>
+      <b>최유정</b>
     </td>
   </tr>
 </table>
+
+</div>
 
 ---
 
