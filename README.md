@@ -3,7 +3,7 @@
 # 🚀 창업자를 위한 AI 정책 안내 챗봇
 
 **개발기간:** 2025.12.10 ~ 2025.12.11  
-**팀명:** SKN20-3rd-4TEAM  
+**팀명:** 거침없이 RAG킥
 **핵심 기술:** RAG (Retrieval-Augmented Generation) + LangChain + OpenAI GPT-4o-mini
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
