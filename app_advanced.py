@@ -17,7 +17,7 @@ import sys
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# multi_copy_llm추가.py에서 필요한 함수들을 임포트
+# rag_base_multi.py에서 필요한 함수들을 임포트
 try:
     from rag_base_multi import (
         multi_query_rag_with_qt,
@@ -26,7 +26,7 @@ except ImportError:
     try:
         # 파일명이 다를 수 있으니 다시 시도
         import importlib.util
-        spec = importlib.util.spec_from_file_location("multi_llm", "multi_copy_llm추가.py")
+        spec = importlib.util.spec_from_file_location("multi_llm", "rag_base_multi.py")
         multi_llm = importlib.util.module_from_spec(spec)
         sys.modules["multi_llm"] = multi_llm
         spec.loader.exec_module(multi_llm)
@@ -435,7 +435,7 @@ with col_main:
                 # RAG 호출
                 with st.spinner(""):
                     try:
-                        answer_text, sources = multi_query_rag_with_qt(user_input, top_k=10, similarity_threshold=0.2)
+                         answer_text = multi_query_rag_with_qt(user_input, top_k=10, similarity_threshold=0.2)
                         
                     except Exception as e:
                         answer_text = f"오류 발생: {str(e)}"
@@ -445,14 +445,14 @@ with col_main:
                 st.session_state["messages"].append({
                     "role": "assistant", 
                     "content": answer_text,
-                    "sources": sources if sources else []
+                    "sources":  []
                 })
                 
                 # 통합 히스토리에 저장
                 qa_pair = {
                     "question": user_input,
                     "answer": answer_text,
-                    "sources": sources if sources else []
+                    "sources":  []
                 }
                 st.session_state["all_history"].append(qa_pair)
                 
