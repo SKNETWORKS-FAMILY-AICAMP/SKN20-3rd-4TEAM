@@ -17,3 +17,4 @@ __pycache__/
 
 test
 chroma_startup_all
+chunked_documents.pkl
