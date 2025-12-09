@@ -9,6 +9,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_community.retrievers import TavilySearchAPIRetriever
 from langchain_core.documents import Document
 
+from enum import Enum
+from pydantic import BaseModel
+
+
 warnings.filterwarnings("ignore")
 load_dotenv()
 
@@ -35,6 +39,7 @@ except Exception as e:
 
 # LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+rag_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # ========================================
 # 프롬프트 정의
@@ -166,27 +171,59 @@ fallback_prompt = ChatPromptTemplate.from_template("""
 답변:""")
 
 # 체인 생성
-qt_chain = qt_prompt | llm | StrOutputParser()
-multi_query_chain = multi_query_prompt | llm | StrOutputParser()
-relevance_chain = relevance_check_prompt | llm | StrOutputParser()
-fallback_chain = fallback_prompt | llm | StrOutputParser()
+qt_chain = qt_prompt | rag_llm | StrOutputParser()
+multi_query_chain = multi_query_prompt | rag_llm | StrOutputParser()
+relevance_chain = relevance_check_prompt | rag_llm | StrOutputParser()
+fallback_chain = fallback_prompt | rag_llm | StrOutputParser()
 
 
 # ========================================
 # 헬퍼 함수
 # ========================================
+class PromptType(str, Enum):
+    '''프롬프트 선택 클래스'''
+    law = "law"
+    announcement = "announcement"
+    general = "general"
+
+class PromptClassifier(BaseModel):
+    prompt_type: PromptType
+
+classify_prompt = ChatPromptTemplate.from_template('''
+당신은 질문을 분류하는 전문가입니다.
+질문이 다음 셋 중 어디에 해당하는지 판단하세요:
+
+1) 법률 관련 질문 → "law"
+2) 지원사업/지원금/공고 → "announcement"
+3) 일반 창업 정보 → "general"
+
+질문: {question}
+
+반드시 아래 JSON 형식으로 답변:
+{{"prompt_type": "law" 또는 "announcement" 또는 "general"}}
+''')
+classifier_llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0
+).with_structured_output(PromptClassifier)
+classifier_chain = classify_prompt | classifier_llm
+
+def classify_question(question: str) -> PromptType:
+    """LLM을 이용해 질문의 유형을 분류한다."""
+    result = classifier_chain.invoke({"question": question})
+    return result.prompt_type
 
 def choose_prompt(question: str):
-    """질문 유형에 따라 적절한 프롬프트 선택"""
-    recommend_keywords = ["추천", "맞는", "신청할 수 있는", "지원해주는", 
-                         "사업 알려줘", "혜택", "지원금", "지원사업"]
-    law_keywords = ["정의", "자격", "요건", "지원법", "법에서", "법상", "제도", "시행","규정"]
-    
-    if any(k in question for k in recommend_keywords):
-        return recommend_prompt, "recommend_prompt"
-    if any(k in question for k in law_keywords):
+    """LLM 분류 결과에 따라 프롬프트 선택"""
+    ptype = classify_question(question)
+
+    if ptype == PromptType.law:
         return law_prompt, "law_prompt"
-    return rag_prompt, "rag_prompt"
+    elif ptype == PromptType.announcement:
+        return recommend_prompt, "recommend_prompt"
+    else:
+        return rag_prompt, "rag_prompt"
+    
 
 def format_docs_as_context(docs):
     """RAG 프롬프트에 넣기 좋은 컨텍스트로 변환 (출처 메타데이터 포함)"""
@@ -296,7 +333,7 @@ def rag_answer_from_docs(question: str, documents):
     print(f"[프롬프트 사용] {pname} (문서 기반)")
     
     try:
-        answer = (prompt | llm | StrOutputParser()).invoke({
+        answer = (prompt | rag_llm | StrOutputParser()).invoke({
             "context": context,
             "question": question
         })
