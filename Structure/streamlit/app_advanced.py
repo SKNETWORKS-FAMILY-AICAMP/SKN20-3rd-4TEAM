@@ -19,7 +19,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # rag_base_multi.py에서 필요한 함수들을 임포트
 try:
-    from rag_base_multi import (
+    from model.rag_base_multi import (
         multi_query_rag_with_qt,
     )
 except ImportError:

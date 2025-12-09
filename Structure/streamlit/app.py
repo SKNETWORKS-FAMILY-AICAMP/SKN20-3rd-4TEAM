@@ -16,7 +16,7 @@ PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # rag_base.py에서 필요한 함수와 객체들을 임포트
-from rag_base import (
+from model.rag_base import (
     retriever,
     llm,
     choose_prompt,

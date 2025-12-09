@@ -19,7 +19,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 # RAG 시스템 임포트
-from rag_base import (
+from model.rag_base import (
     retriever,
     llm,
     choose_prompt,
