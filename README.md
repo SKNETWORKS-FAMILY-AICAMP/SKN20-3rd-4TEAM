@@ -28,24 +28,29 @@
   <tr>
     <td align="center">
       <img src="img/김태빈img.jpeg" width="180" alt="김태빈"/><br/>
-      <b>김태빈</b>
+      <b>김태빈</b><br/>
+      <a href="https://github.com/binibini90">@binibini90</a>
     </td>
     <td align="center">
       <img src="img/정래원img.jpeg" width="180" alt="정래원"/><br/>
-      <b>정래원</b>
+      <b>정래원</b><br/>
+      <a href="https://github.com/Raewon12">@Raewon12</a>
     </td>
     <td align="center">
       <img src="img/최소영img.jpeg" width="180" alt="최소영"/><br/>
-      <b>최소영</b>
+      <b>최소영</b><br/>
+      <a href="https://github.com/sy-choi25">@sy-choi25</a>
     </td>
     <td align="center">
       <img src="img/최유정img.jpeg" width="180" alt="최유정"/><br/>
-      <b>최유정</b>
+      <b>최유정</b><br/>
+      <a href="https://github.com/sallydeveloperr">@sallydeveloperr</a>
     </td>
   </tr>
 </table>
 
 </div>
+
 
 ---
 
