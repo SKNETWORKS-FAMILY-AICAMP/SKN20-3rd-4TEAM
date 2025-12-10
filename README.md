@@ -28,29 +28,24 @@
   <tr>
     <td align="center">
       <img src="img/김태빈img.jpeg" width="180" alt="김태빈"/><br/>
-      <b>김태빈</b><br/>
-      <a href="https://github.com/binibini90">@binibini90</a>
+      <b>김태빈</b>
     </td>
     <td align="center">
       <img src="img/정래원img.jpeg" width="180" alt="정래원"/><br/>
-      <b>정래원</b><br/>
-      <a href="https://github.com/Raewon12">@Raewon12</a>
+      <b>정래원</b>
     </td>
     <td align="center">
       <img src="img/최소영img.jpeg" width="180" alt="최소영"/><br/>
-      <b>최소영</b><br/>
-      <a href="https://github.com/sy-choi25">@sy-choi25</a>
+      <b>최소영</b>
     </td>
     <td align="center">
       <img src="img/최유정img.jpeg" width="180" alt="최유정"/><br/>
-      <b>최유정</b><br/>
-      <a href="https://github.com/sallydeveloperr">@sallydeveloperr</a>
+      <b>최유정</b>
     </td>
   </tr>
 </table>
 
 </div>
-
 
 ---
 
@@ -194,19 +189,36 @@
 | 개선 1 | 500 | 여전히 긴 문단 | △ 개선 미흡 |
 | **최종** | **타입별 차별화** | 문서 특성 반영 | ✅ **정확도 +32%** |
 
-### 2. Query Transformation 효과 + Multi-Query RAG
+### 2. Query Transformation 효과
 
 - **적용 전**: "지원사업 신청하려면 어떤 조건이 필요한가요?"
   - → 검색 결과: 관련도 낮은 일반 창업 정보 섞임
 - **적용 후**: "지원사업 신청 조건"
   - → 검색 결과: announcement 타입 문서 집중 검색
+    
+### 3. Multi-Query RAG 효과
 - 하나의 질문을 여러 관점으로 분해하여 검색
-### 3. Hallucination 감소
+- **적용 전**: "지원 사업 신청 조건"
+- Multi-Query 생성 전 : "지원 사업 신청 조건"
+- Multi-Query 생성 후 : ex)
+    - "지원사업 신청 조건"
+    - "창업 지원사업 지원 자격"
+    - "정부 지원사업 신청 요건"
+
+- 결과 :
+    - announcement 타입 문서를 다각도 쿼리로 반복 검색
+    - 지원 자격, 신청 요건, 대상 조건 정보가 집중적으로 retrieval
+    - 최종 답변의 정확도 및 문서 적합도 크게 향상
+
+### 4. Hallucination 감소
 ```python
 # 프롬프트에 명시적 제약 추가
 """
 1. 반드시 제공된 문맥(Context) 안의 정보만 사용하세요.
 2. 문맥에 없는 내용은 추측하지 말고 솔직하게 말하세요.
+3. 관련 문서가 충분하지 않을 경우,
+내부 문서에서 관련 정보를 찾지 못했습니다.
+일반적인 지식을 바탕으로 답변해주세요.
 """
 ```
 
@@ -217,19 +229,19 @@
 <table>
 <tr>
   <td align="left" width="100%">
-    <img src="img/RAG시스템평가리포트1.png" width="50%"><br>
+    <img src="img/RAG시스템평가리포트1.png" width="100%"><br>
     <sub><b>RAG평가리포트</b></sub>
   </td>
 </tr>
 <tr>
   <td align="left" width="100%">
-    <img src="img/RAG시스템평가리포트2.png" width="70%"><br>
+    <img src="img/RAG시스템평가리포트2.png" width="100%"><br>
     <sub><b>상세 비교</b></sub>
   </td>
 </tr>
   <tr>
   <td align="left" width="100%">
-    <img src="img/RAG시스템평가리포트3.png" width="50%"><br>
+    <img src="img/RAG시스템평가리포트3.png" width="100%"><br>
     <sub><b>질문별 상세 결과</b></sub>
   </td>
 </tr>
