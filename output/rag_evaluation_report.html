@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RAG 시스템 평가 리포트</title>
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .summary-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .stat:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .winner {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white !important;
+        }
+        
+        .winner h3 {
+            color: white !important;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f0f0f0;
+        }
+        
+        .best-score {
+            background: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .worst-score {
+            background: #f44336;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+        
+        .details {
+            margin-top: 40px;
+        }
+        
+        .question-card {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .question-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .answer-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .answer-section h5 {
+            color: #764ba2;
+            margin-bottom: 8px;
+        }
+        
+        .answer-text {
+            color: #555;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        
+        .badge-easy {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .badge-medium {
+            background: #FF9800;
+            color: white;
+        }
+        
+        .badge-hard {
+            background: #f44336;
+            color: white;
+        }
+        
+        .category-badge {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .chart-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+        
+        .bar {
+            height: 30px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>🎯 RAG 시스템 평가 리포트</h1>
+<p>생성 시간: 2025-12-10 11:35:31</p>
+</div>
+<div class="content">
+<div class="summary">
+<div class="summary-card">
+<h3>rag_base</h3>
+<div class="stat">
+<span class="stat-label">종합 점수</span>
+<span class="stat-value">75.7%</span>
+</div>
+<div class="stat">
+<span class="stat-label">키워드 점수</span>
+<span class="stat-value">95.8%</span>
+</div>
+<div class="stat">
+<span class="stat-label">LLM 점수</span>
+<span class="stat-value">55.6%</span>
+</div>
+<div class="stat">
+<span class="stat-label">평균 실행 시간</span>
+<span class="stat-value">6.83초</span>
+</div>
+<div class="stat">
+<span class="stat-label">오류율</span>
+<span class="stat-value">0.0%</span>
+</div>
+</div>
+<div class="summary-card">
+<h3>rag_base_multi</h3>
+<div class="stat">
+<span class="stat-label">종합 점수</span>
+<span class="stat-value">91.3%</span>
+</div>
+<div class="stat">
+<span class="stat-label">키워드 점수</span>
+<span class="stat-value">93.8%</span>
+</div>
+<div class="stat">
+<span class="stat-label">LLM 점수</span>
+<span class="stat-value">88.8%</span>
+</div>
+<div class="stat">
+<span class="stat-label">평균 실행 시간</span>
+<span class="stat-value">15.51초</span>
+</div>
+<div class="stat">
+<span class="stat-label">오류율</span>
+<span class="stat-value">0.0%</span>
+</div>
+</div>
+<div class="summary-card winner">
+<h3>🏆 rag_base_multi_web.py</h3>
+<div class="stat">
+<span class="stat-label">종합 점수</span>
+<span class="stat-value">92.8%</span>
+</div>
+<div class="stat">
+<span class="stat-label">키워드 점수</span>
+<span class="stat-value">89.6%</span>
+</div>
+<div class="stat">
+<span class="stat-label">LLM 점수</span>
+<span class="stat-value">80.0%</span>
+</div>
+<div class="stat">
+<span class="stat-label">평균 실행 시간</span>
+<span class="stat-value">12.97초</span>
+</div>
+<div class="stat">
+<span class="stat-label">오류율</span>
+<span class="stat-value">0.0%</span>
+</div>
+</div>
+
+<div class="summary-card">
+<h3>rag_base_multi_web_cache</h3>
+<div class="stat">
+<span class="stat-label">종합 점수</span>
+<span class="stat-value">91.6%</span>
+</div>
+<div class="stat">
+<span class="stat-label">키워드 점수</span>
+<span class="stat-value">87.5%</span>
+</div>
+<div class="stat">
+<span class="stat-label">LLM 점수</span>
+<span class="stat-value">85.6%</span>
+</div>
+<div class="stat">
+<span class="stat-label">평균 실행 시간</span>
+<span class="stat-value">11.03초</span>
+</div>
+<div class="stat">
+<span class="stat-label">오류율</span>
+<span class="stat-value">0.0%</span>
+</div>
+</div>
+</div>
+<h2>📊 상세 비교</h2>
+<table class="comparison-table">
+<thead>
+<tr>
+<th>시스템</th>
+<th>종합 점수</th>
+<th>키워드 점수</th>
+<th>LLM 점수</th>
+<th>실행 시간</th>
+<th>오류율</th>
+<th>성공 질문</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>rag_base</strong></td>
+<td><span class="">75.7%</span></td>
+<td>95.8%</td>
+<td>55.6%</td>
+<td>6.83초</td>
+<td>0.0%</td>
+<td>8/8</td>
+</tr>
+<tr>
+<td><strong>rag_base_multi</strong></td>
+<td><span class="">91.3%</span></td>
+<td>93.8%</td>
+<td>88.8%</td>
+<td>15.51초</td>
+<td>0.0%</td>
+<td>8/8</td>
+</tr>
+<tr>
+<td><strong>rag_base_multi_web.py</strong></td>
+<td><span class="best-score">92.8%</span></td>
+<td>89.6%</td>
+<td>80.0%</td>
+<td>12.97초</td>
+<td>0.0%</td>
+<td>8/8</td>
+</tr>
+
+<tr>
+<td><strong>rag_base_multi_web_cache</strong></td>
+<td><span class="">91.6%</span></td>
+<td>87.5%</td>
+<td>85.6%</td>
+<td>11.03초</td>
+<td>0.0%</td>
+<td>8/8</td>
+</tr>
+</tbody>
+</table>
+<h2>📂 카테고리별 성능</h2>
+<div class="chart-container">
+<h4>announcement</h4>
+<div class="bar" style="width: 90%">rag_base: 90%</div>
+<div class="bar" style="width: 95%">rag_base_multi: 95%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web.py: 100%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web_llm: 100%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web_cache: 100%</div>
+<h4>cases</h4>
+<div class="bar" style="width: 95%">rag_base: 95%</div>
+<div class="bar" style="width: 95%">rag_base_multi: 95%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web.py: 100%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web_llm: 100%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web_cache: 100%</div>
+<h4>law</h4>
+<div class="bar" style="width: 78%">rag_base: 79%</div>
+<div class="bar" style="width: 80%">rag_base_multi: 80%</div>
+<div class="bar" style="width: 71%">rag_base_multi_web.py: 71%</div>
+<div class="bar" style="width: 81%">rag_base_multi_web_llm: 82%</div>
+<div class="bar" style="width: 71%">rag_base_multi_web_cache: 71%</div>
+<h4>space</h4>
+<div class="bar" style="width: 60%">rag_base: 60%</div>
+<div class="bar" style="width: 95%">rag_base_multi: 95%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web.py: 100%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web_llm: 100%</div>
+<div class="bar" style="width: 95%">rag_base_multi_web_cache: 95%</div>
+<h4>web_search_needed</h4>
+<div class="bar" style="width: 67%">rag_base: 68%</div>
+<div class="bar" style="width: 94%">rag_base_multi: 95%</div>
+<div class="bar" style="width: 100%">rag_base_multi_web.py: 100%</div>
+<div class="bar" style="width: 91%">rag_base_multi_web_llm: 92%</div>
+<div class="bar" style="width: 98%">rag_base_multi_web_cache: 98%</div>
+</div>
+<div class="details">
+<h2>📝 질문별 상세 결과</h2>
+<div class="question-card">
+<h4>Q1. 서울에서 AI 스타트업 창업하는데 지원받을 수 있는 사업 알려줘</h4>
+<div>
+<span class="badge badge-easy">easy</span>
+<span class="badge category-badge">announcement</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 90%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 80%</span>
+<span style="color: #666;">| 14.93초 | 826자</span>
+</h5>
+<div class="answer-text">■ ✅ 추천 사업명: 2025년 기술이전 지원사업(서울 스타트업 Tech trade-on 프로그램) 참여기업 모집  
+■ 🎯 추천 이유: AI 기반 비즈니스를 추진 중인 스타트업에게 필요한 기술 개발 및 R&amp;D 지원을 받을 수 있는 기회입니다.  
+■ 💰 지원 내용: 공공기술 이전을 통해 기술 개발 지원  
+■ 📝 신청 대상 요약: 서울시 소재 7년 미만의 창업기업  
+■ ⏳ 접수 기간: 2025-12-01 ~ 2025-12-14  
+■ ⚠️ 주의사항: 본사 소재지가 서울이어야 함  
+■ 🔗 추가 확인 필요 여부: [추가 확인 필요](https://www.k-startup.go.kr/web/contents/bizpbanc-ongoing.do?schM=view&amp;pbancSn=175668)  
+
+■ ✅ 추천 사업명: 2025년 기술컨설팅 지원사업(서울 스타트업 Tech trade-on 프로그램) 참여기업 모집  
+■ 🎯 추천 이유: AI 스타트업의 기술 경쟁력 향상을 위한 멘토링 및 컨...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 13.09초 | 693자</span>
+</h5>
+<div class="answer-text">■ 추천 사업명  
+2025년 기술이전 지원사업(서울 스타트업 Tech trade-on 프로그램) 참여기업 모집  
+
+■ 왜 이 사용자에게 적합한지  
+서울에서 AI 스타트업을 창업하려는 사용자에게 적합한 지원사업으로, 기술개발(R&amp;D) 지원을 통해 AI 기반 비즈니스의 기술 경쟁력을 높일 수 있습니다.  
+
+■ 지원 내용  
+자금 지원 (기술개발 R&amp;D)  
+
+■ 신청 대상 요약  
+서울시 소재 7년 미만의 창업기업 (본사 소재지가 서울이어야 함)  
+
+■ 접수 기간  
+상시 모집  
+
+■ 주의사항  
+신청 시 본사 소재지가 서울이어야 하며, 7년 미만의 창업기업이어야 합니다.  
+
+---
+
+■ 추천 사업명  
+2025년 기술컨설팅 지원사업(서울 스타트업 Tech trade-on 프로그램) 참여기업 모집  
+
+■ 왜 이 사용자에게 적합한지  
+AI 스타트업 창업을 준비하는 사용자에게 기술컨설팅을 통해 사업 아이디어를 구체화하고, 시장 진입 전략을 수립하는 데 도움을 줄 수 있습니다...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 14.99초 | 623자</span>
+</h5>
+<div class="answer-text">■ 추천 사업명  
+2025년 기술이전 지원사업(서울 스타트업 Tech trade-on 프로그램) 참여기업 모집  
+
+■ 왜 이 사용자에게 적합한지  
+서울에서 AI 스타트업을 창업하는 예비 창업자에게 적합한 지원사업으로, 기술개발(R&amp;D) 지원을 통해 AI 기술을 활용한 사업 아이디어를 구체화할 수 있습니다.  
+
+■ 지원 내용  
+자금 지원 (기술개발 R&amp;D)  
+
+■ 신청 대상 요약  
+서울시 소재 7년 미만의 창업기업 (본사 소재지가 서울이어야 함)  
+
+■ 접수 기간  
+상시 모집  
+
+■ 주의사항  
+이메일 또는 온라인 접수 필요  
+
+---
+
+■ 추천 사업명  
+2025년 기술컨설팅 지원사업(서울 스타트업 Tech trade-on 프로그램) 참여기업 모집  
+
+■ 왜 이 사용자에게 적합한지  
+AI 스타트업 창업을 준비하는 예비 창업자에게 기술 컨설팅을 통해 사업의 기술 경쟁력을 높일 수 있는 기회를 제공합니다.  
+
+■ 지원 내용  
+멘토링 및 컨설팅 지원  
+
+■ 신...</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 10.12초 | 471자</span>
+</h5>
+<div class="answer-text">다음 두 가지 지원사업을 추천드립니다:
+
+1. **2025 Zero100 AI 빌더톤 [AI Builderthon]**
+   - **신청 대상**: AI 기반 글로벌 사업 아이디어와 실행력을 가진 팀
+   - **지역**: 서울
+   - **창업 연수**: 예비창업자 및 초기 스타트업
+   - **지원 정보**: 6주간의 AI 실전 창업 프로그램으로, 아이디어에서 MVP, 글로벌 피칭데이까지 진행됩니다.
+
+2. **KHNP AI(아이)누리 입주기업 공모**
+   - **신청 대상**: 에너지산업에 관심 있는 AI 스타트업 관련 예비창업자 또는 창업 7년 이내 기업
+   - **지역**: 전국 (서울 포함)
+   - **창업 연수**: 예비창업자 및 7년 미만
+   - **지원 정보**: AI 스타트업 기업 발굴 및 육성을 위한 입주기업 공모입니다.
+
+이 두 가지 사업은 서울에서 AI 스타트업을 창업하는 데 적합한 지원을 제공합니다.</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q2. 중소기업창업 지원법에서 창업자의 정의가 뭐야?</h4>
+<div>
+<span class="badge badge-easy">easy</span>
+<span class="badge category-badge">law</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 70%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 40%</span>
+<span style="color: #666;">| 2.77초 | 78자</span>
+</h5>
+<div class="answer-text">제공된 법령 문서에서 창업자의 정의에 대한 내용은 확인되지 않습니다. 
+
+※ 본 답변은 일반 정보 제공이며, 구체적인 법률 자문은 아닙니다.</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 90%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 80%</span>
+<span style="color: #666;">| 9.08초 | 310자</span>
+</h5>
+<div class="answer-text">중소기업창업 지원법에서 창업자의 정의는 일반적으로 중소기업을 설립하고 운영하는 개인 또는 법인을 의미합니다. 창업자는 사업 아이디어를 가지고 이를 실현하기 위해 필요한 자원을 모으고, 사업을 시작하는 주체로서, 사업의 경영 및 운영에 책임을 지는 사람입니다. 
+
+법률에 따라 창업자는 특정 요건을 충족해야 할 수 있으며, 예를 들어 창업자의 연령, 사업 경험, 자본금 등의 조건이 있을 수 있습니다. 이러한 정의는 중소기업의 발전과 창업 생태계 조성을 위한 정책적 지원의 기초가 됩니다. 
+
+정확한 정의는 해당 법률의 조문을 참조하는 것이 가장 좋습니다.</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 90%</span>
+<span style="color: #2196F3;">키워드: 67%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 7.46초 | 158자</span>
+</h5>
+<div class="answer-text">중소기업창업 지원법에서 "창업자"란 중소기업을 창업하는 자와 중소기업을 창업하여 사업을 개시한 날부터 7년이 지나지 아니한 자를 말합니다. 이 경우 사업 개시에 관한 세부 사항은 대통령령으로 정해집니다. (제○조)
+
+※ 본 답변은 일반 정보 제공이며, 구체적인 법률 자문은 아닙니다.</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 8.84초 | 235자</span>
+</h5>
+<div class="answer-text">중소기업창업 지원법에서 "창업자"는 "예비창업자"와 "창업기업"으로 구분됩니다. 
+
+1. **예비창업자**: 창업을 하려는 개인 등을 의미합니다(제5조의2 제4호).
+2. **창업기업**: 중소기업을 창업하여 사업을 개시한 날부터 7년이 지나지 않은 기업을 말하며, 법인과 개인사업자를 포함합니다(제5조의2 제3호).
+
+이 정의에 따라 창업자는 창업을 계획하거나 이미 창업하여 사업을 운영하는 개인이나 기업을 포함합니다.</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q3. 창업 실패 후 재도전할 때 주의할 점 알려줘</h4>
+<div>
+<span class="badge badge-easy">easy</span>
+<span class="badge category-badge">cases</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 6.62초 | 329자</span>
+</h5>
+<div class="answer-text">- 핵심 답변: 창업 실패 후 재도전할 때 주의할 점은 폐업 처리를 철저히 하고, 관련 서류를 잘 챙기는 것입니다. 또한, 이전 사업에서의 실수를 반복하지 않기 위해 경영, 세무, 회계에 대한 지식을 쌓는 것이 중요합니다.
+
+- 세부 정리:
+  - 폐업 처리 시 관련 서류를 잘 챙겨야 함.
+  - 이전 사업에서의 실수를 반복하지 않기 위해 관련 교육 프로그램에 참여.
+  - 다양한 기술을 이해하고, 사업적으로 아이디어를 잘 전달할 수 있는 능력 필요.
+  - 재도전 성공 패키지와 같은 지원사업을 활용하여 전문가의 도움을 받는 것이 유리함.
+
+- [참고: 실패 사례, 재도전성공패키지]</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 13.67초 | 689자</span>
+</h5>
+<div class="answer-text">창업 실패 후 재도전할 때 주의할 점은 다음과 같습니다:
+
+1. **폐업 처리 시 서류 관리**: 폐업을 할 때 관련 서류를 잘 챙겨 두어야 합니다. 대강 마무리하지 말고 필요한 서류를 정리하는 것이 중요합니다.
+
+2. **재도전 성공 패키지 활용**: 재도전 성공 패키지와 같은 지원사업을 활용하여 필요한 자금과 멘토링을 받을 수 있습니다. 이 프로그램은 재창업자에게 맞춤형 지원을 제공합니다.
+
+3. **전문 지식 습득**: 이전 사업에서의 실패를 반복하지 않기 위해 경영, 세무, 회계에 대한 지식을 쌓는 것이 중요합니다. 관련 교육 프로그램에 참여하여 필요한 지식을 확보하세요.
+
+4. **솔직한 접근**: 재도전 신청 시 자신의 실패 경험을 솔직하게 기술하는 것이 도움이 될 수 있습니다. 진솔한 접근이 긍정적인 평가를 받을 수 있습니다.
+
+5. **네트워킹**: 다양한 투자자 및 관계 기관과의 네트워킹을 통해 지원을 받을 수 있는 기회를 늘리세요. IR(투자 설명회)와 같은 프로그...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 15.98초 | 640자</span>
+</h5>
+<div class="answer-text">창업 실패 후 재도전할 때 주의할 점은 다음과 같습니다:
+
+1. **폐업 처리 시 서류 관리**: 폐업을 할 때 관련 서류를 잘 챙겨 두는 것이 중요합니다. 대강 마무리하지 말고 필요한 서류를 정리해 두어야 합니다.
+
+2. **기술 이해**: 개발자와 대표는 다르므로, 제품에 들어가는 모든 기술을 이해하고 있어야 합니다. 이는 다른 개발자들을 이끌고 사업 아이디어를 효과적으로 전달하는 데 도움이 됩니다.
+
+3. **재도전 성공 패키지 활용**: 재도전성공패키지와 같은 지원사업을 활용하여 필요한 자금을 지원받고, 전문가의 컨설팅을 통해 경영, 세무, 회계에 대한 지식을 쌓는 것이 중요합니다.
+
+4. **솔직한 반성**: 이전 실패의 원인을 솔직하게 분석하고, 이를 바탕으로 개선할 점을 명확히 해야 합니다. 이를 통해 재도전 시 더 나은 전략을 세울 수 있습니다.
+
+5. **네트워킹**: 다양한 투자자 및 관계 기관과의 네트워킹을 통해 지원을 받을 수 있는 기회를 늘려야 합니다.
+
+이러...</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 9.29초 | 468자</span>
+</h5>
+<div class="answer-text">창업 실패 후 재도전할 때 주의할 점은 다음과 같습니다:
+
+1. **기술 이해**: 제품에 들어가는 모든 기술을 이해하고 있어야 합니다. 이는 다른 개발자들을 이끌고 사업 아이디어를 효과적으로 전달하는 데 중요합니다.
+
+2. **폐업 처리**: 이전 사업의 폐업 처리를 철저히 하고 관련 서류를 잘 챙겨 두어야 합니다. 대강 마무리하지 않도록 주의하세요.
+
+3. **재도전 준비**: 재도전의 기회를 잡기 위해 현실적으로 어떤 준비가 필요한지 고민해야 합니다.
+
+4. **세무 및 회계 지식**: 이전 사업에서의 실수를 반복하지 않기 위해 세무와 회계에 대한 지식을 쌓는 것이 중요합니다. 관련 교육 프로그램에 참여하는 것이 도움이 됩니다.
+
+5. **특허 문제**: 새로운 제품을 개발할 때 경쟁사의 특허와 겹치지 않도록 주의해야 합니다. 중복되는 부분은 피해야 합니다.
+
+이러한 점들을 유념하여 재도전 준비를 철저히 하시기 바랍니다.</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q4. 서울 강남에 있는 창업 공유오피스나 입주 공간 알려줘</h4>
+<div>
+<span class="badge badge-easy">easy</span>
+<span class="badge category-badge">space</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 60%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 20%</span>
+<span style="color: #666;">| 4.63초 | 216자</span>
+</h5>
+<div class="answer-text">- 핵심 답변: 제공된 정보에는 서울 강남에 위치한 창업 공유오피스나 입주 공간에 대한 내용이 없습니다. 대신, 경북 안동시에 위치한 장애인기업종합지원센터의 창업보육센터 정보가 포함되어 있습니다.
+
+- 세부 정리:
+  - 창업 공간: 장애인기업종합지원센터
+  - 센터 유형: 창업보육센터
+  - 주소: 경북 안동시 강남2길 60-18 (정하동, 정우빌딩)
+
+- [참고: 창업 공간 정보]</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 11.11초 | 630자</span>
+</h5>
+<div class="answer-text">서울 강남에는 다양한 창업 공유오피스와 입주 공간이 있습니다. 아래는 몇 가지 대표적인 공간입니다:
+
+1. **패스트파이브 (Fastfive)**: 강남역 근처에 위치한 공유오피스로, 다양한 크기의 사무실과 회의실을 제공합니다. 스타트업과 프리랜서에게 적합한 공간입니다.
+
+2. **위워크 (WeWork)**: 강남에 여러 지점을 운영하고 있는 글로벌 공유오피스 브랜드입니다. 현대적인 인테리어와 다양한 편의시설을 갖추고 있습니다.
+
+3. **스파크플러스 (SparkPlus)**: 강남역 인근에 위치한 공유오피스로, 다양한 사무공간과 커뮤니티 프로그램을 제공합니다. 스타트업을 위한 지원 프로그램도 운영합니다.
+
+4. **코워킹 스페이스 (Co-Working Space)**: 강남 지역에는 여러 개의 코워킹 스페이스가 있으며, 각기 다른 테마와 분위기를 가지고 있습니다. 예를 들어, '더 스페이스'나 '스페이스워크' 등이 있습니다.
+
+5. **창업진흥센터**: 정부 지원을 받는 창업 공간...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 80%</span>
+<span style="color: #666;">| 10.45초 | 354자</span>
+</h5>
+<div class="answer-text">서울 강남에 있는 창업 공유오피스 및 입주 공간으로는 다음과 같은 곳들이 있습니다:
+
+1. **린밸류업 워크스페이스**
+   - 위치: 서울특별시 서초구 강남대로69길 8 KI타워 10층
+   - 교통: 신논현역에서 도보 5분, 강남역에서 가까움
+
+2. **위워크(WeWork)**
+   - 강남지역에 여러 지점이 있으며, 창업자와 프리랜서들에게 편리한 업무환경을 제공
+
+3. **기타 공유오피스**
+   - 강남지역에는 다양한 공유오피스 기업들이 입주해 있어 선택의 폭이 넓음
+
+이 외에도 강남역 근처에는 여러 공유오피스가 있으니, 추가적인 정보는 직접 확인해보시는 것이 좋습니다.
+
+참고 근거 유형: 창업 공간 정보 (space)</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 80%</span>
+<span style="color: #666;">| 13.28초 | 250자</span>
+</h5>
+<div class="answer-text">서울 강남에는 여러 창업 공유오피스와 입주 공간이 있습니다. 대표적인 공간은 다음과 같습니다:
+
+- **린밸류업 워크스페이스**: 서울특별시 서초구 강남대로69길 8 KI타워 10층에 위치, 신논현역에서 도보 5분 거리.
+- **위워크(WeWork)**: 강남지역에 여러 지점이 있으며, 창업자와 프리랜서들에게 편리한 업무환경을 제공.
+
+이 외에도 강남역 근처에는 다양한 공유오피스가 있으니, 필요에 따라 추가적인 공간을 찾아보시는 것도 좋습니다.</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q5. 2024년 최신 스타트업 트렌드와 유망 업종 알려줘</h4>
+<div>
+<span class="badge badge-medium">medium</span>
+<span class="badge category-badge">web_search_needed</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 60%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 20%</span>
+<span style="color: #666;">| 4.93초 | 163자</span>
+</h5>
+<div class="answer-text">죄송하지만, 2024년 최신 스타트업 트렌드와 유망 업종에 대한 정보는 제공된 문맥에 포함되어 있지 않습니다. 따라서 해당 질문에 대한 답변을 드릴 수 없습니다. 
+
+- 핵심 답변: 2024년 스타트업 트렌드와 유망 업종에 대한 정보는 없습니다.
+- [참고: 제공된 문맥에는 관련 정보 없음]</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 24.68초 | 1029자</span>
+</h5>
+<div class="answer-text">2024년의 스타트업 트렌드는 여러 가지 혁신적인 기술과 사회적 변화에 기반하여 발전하고 있습니다. 다음은 2024년 유망한 스타트업 트렌드와 업종에 대한 몇 가지 예시입니다.
+
+1. **AI 및 머신러닝**: 인공지능(AI)과 머신러닝 기술은 계속해서 발전하고 있으며, 다양한 산업에서 활용되고 있습니다. 특히, 맞춤형 서비스, 데이터 분석, 자동화 솔루션을 제공하는 스타트업이 주목받고 있습니다.
+
+2. **헬스케어 및 바이오테크**: 팬데믹 이후 헬스케어 분야의 중요성이 더욱 부각되었습니다. 원격 진료, 개인 맞춤형 건강 관리, 유전자 편집 기술 등을 활용한 스타트업이 유망합니다.
+
+3. **지속 가능성 및 친환경 기술**: 환경 문제에 대한 관심이 높아짐에 따라, 지속 가능한 제품 및 서비스, 재활용 기술, 탄소 배출 감소 솔루션을 제공하는 스타트업이 인기를 끌고 있습니다.
+
+4. **핀테크**: 금융 기술 분야는 여전히 성장 가능성이 큽니다. 특히, 블록체인, 디지털 자산 관리...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 80%</span>
+<span style="color: #666;">| 12.36초 | 462자</span>
+</h5>
+<div class="answer-text">2024년 최신 스타트업 트렌드와 유망 업종은 다음과 같습니다:
+
+### 최신 스타트업 트렌드
+1. **인공지능(AI) 기술의 확산**: AI 기술이 다양한 산업에 적용되고 있으며, 혁신적인 솔루션을 제공하고 있습니다.
+2. **이차전지(배터리) 산업 성장**: 지속 가능한 에너지와 전기차의 수요 증가로 이차전지 기술이 주목받고 있습니다.
+3. **로봇 기술 발전**: 자동화와 효율성을 높이는 로봇 기술이 다양한 분야에서 활용되고 있습니다.
+4. **스마트홈 및 IoT 기술 발전**: 가정의 편리함을 높이는 스마트홈 기기와 IoT 기술이 인기를 끌고 있습니다.
+
+### 유망 업종
+1. **건강식품 및 케어 서비스**: 고령화 사회와 건강에 대한 관심 증가로 인해 이 분야가 가장 주목받고 있습니다.
+
+이 정보를 바탕으로 창업 아이디어를 구상할 수 있을 것입니다.
+
+**참고 근거 유형**: 문서 1, 문서 2, 문서 3</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 80%</span>
+<span style="color: #666;">| 9.63초 | 241자</span>
+</h5>
+<div class="answer-text">2024년 최신 스타트업 트렌드와 유망 업종은 다음과 같습니다:
+
+### 최신 스타트업 트렌드
+1. **인공지능(AI) 기술의 확산**
+2. **이차전지(배터리) 산업 성장**
+3. **로봇 기술 발전**
+4. **스마트홈 및 IoT 기술 발전**
+
+### 유망 업종
+1. **건강식품 및 케어 서비스**
+   - 고령화 사회 진입과 건강에 대한 관심 증가로 인해 주목받고 있음.
+
+이 정보를 바탕으로 창업 아이디어를 구상해보세요!</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q6. 최근 한국 창업 생태계 변화와 정부 정책 동향은?</h4>
+<div>
+<span class="badge badge-medium">medium</span>
+<span class="badge category-badge">web_search_needed</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 65%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 30%</span>
+<span style="color: #666;">| 4.21초 | 173자</span>
+</h5>
+<div class="answer-text">죄송하지만, 제공된 문맥에는 한국 창업 생태계 변화나 정부 정책 동향에 대한 정보가 포함되어 있지 않습니다. 따라서 이에 대한 구체적인 답변을 드릴 수 없습니다. 
+
+- 핵심 답변: 관련 정보 없음
+- 세부 정리: 제공된 문맥에는 창업 생태계 변화나 정부 정책 동향에 대한 내용이 없습니다.
+- [참고: 없음]</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 21.31초 | 1061자</span>
+</h5>
+<div class="answer-text">최근 한국의 창업 생태계는 여러 가지 변화와 발전을 겪고 있습니다. 다음은 주요 변화와 정부 정책 동향에 대한 개요입니다.
+
+1. **스타트업 지원 확대**: 한국 정부는 스타트업과 중소기업을 지원하기 위해 다양한 정책을 시행하고 있습니다. 창업 지원금, 세금 감면, 창업 교육 프로그램 등이 포함되어 있으며, 특히 청년 창업과 여성 창업에 대한 지원이 강화되고 있습니다.
+
+2. **창업 생태계의 다변화**: 전통적인 IT 및 기술 중심의 스타트업에서 벗어나, 헬스케어, 그린테크, 바이오, 문화 콘텐츠 등 다양한 분야로 창업이 확산되고 있습니다. 이러한 변화는 창업자들이 다양한 산업에서 혁신을 추구할 수 있는 기회를 제공합니다.
+
+3. **투자 환경 개선**: 벤처 캐피탈과 엔젤 투자자들이 증가하면서 스타트업에 대한 투자 환경이 개선되고 있습니다. 정부는 투자 유치를 촉진하기 위해 다양한 펀드를 조성하고, 투자자와 창업자 간의 네트워킹 기회를 제공하고 있습니다.
+
+4. **글로벌 진출...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 18.98초 | 563자</span>
+</h5>
+<div class="answer-text">최근 한국 창업 생태계는 여러 사회적 및 기술적 변화의 영향을 받고 있으며, 정부는 이를 지원하기 위한 다양한 정책을 추진하고 있습니다.
+
+1. **사회적 및 기술적 변화**:
+   - 고령화, 1인 가구 증가, 4차 산업혁명 등의 변화가 창업 생태계에 큰 영향을 미치고 있습니다.
+   - 기술 기반 창업의 비중이 증가하고 있습니다.
+
+2. **정부 정책 동향**:
+   - 맞춤형 금융지원 정책과 글로벌 펀드 출자사업 확대를 통해 다층적 자금 공급망을 확립하고 있습니다.
+   - 유니콘 및 딥테크 기업의 집중 육성을 위한 맞춤형 금융 지원 제도를 운영하고 있습니다.
+   - 퇴직연금의 벤처 투자 확대를 통해 장기적인 성장 기반을 마련하고 있습니다.
+   - M&amp;A 활동이 급증하고 있으며, 이는 기업의 가치 상승 및 경쟁력 강화를 가져오는 중요한 요소로 작용하고 있습니다.
+
+이러한 변화와 정책들은 한국 스타트업의 국제적 위상을 높이고, 글로벌 시장 진출을 지원하는 데 중요한 역할을 하...</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 12.66초 | 854자</span>
+</h5>
+<div class="answer-text">최근 한국 창업 생태계 변화와 정부 정책 동향은 다음과 같습니다:
+
+1. **창업 관심도 및 의향 증가**: 
+   - 창업에 대한 관심도는 60.5%로 증가하였고, 창업 의향은 72.2%로 상승했습니다. 이는 예비 창업자와 창업 기업의 증가를 나타냅니다.
+
+2. **정부의 창업 지원 정책**:
+   - 정부는 신산업 및 기술 창업을 활성화하고 창업 기업의 사업화 및 국제화 역량 강화를 위한 다양한 시책을 추진하고 있습니다.
+   - 예비 창업자 및 창업 기업에 대한 교육, 컨설팅, 해외 진출 지원 등의 정책이 마련되고 있습니다.
+
+3. **지역 창업 생태계 활성화**:
+   - 지방자치단체는 지역 자원을 활용하여 창업을 촉진하고 창업 친화적인 환경을 조성하기 위해 노력하고 있습니다.
+   - 지역 창업 전담 기관이 지정되어 지역 기반의 신산업 및 기술 창업을 지원하고 있습니다.
+
+4. **K-스타트업센터(KSC) 사업**:
+   - K-스타트업센터는 국내 유망 스타트업의 해외 시장...</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q7. 중소기업창업 지원법 제5조에 따르면, 창업자가 받을 수 있는 지원 혜택에는 어떤 것들이 포함되어 있나요? 조문 번호와 함께 설명해주세요.</h4>
+<div>
+<span class="badge badge-hard">hard</span>
+<span class="badge category-badge">law</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 88%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 75%</span>
+<span style="color: #666;">| 9.31초 | 454자</span>
+</h5>
+<div class="answer-text">현재 조건에 정확히 부합하는 자금 지원 사업은 제한적입니다. 
+
+중소기업창업 지원법 제5조에 따르면, 창업자가 받을 수 있는 지원 혜택에는 다음과 같은 내용이 포함됩니다:
+
+1. **제34조(창업기업의 성장촉진 지원 강화)**: 정부는 창업기업이 국제 경쟁력을 갖춘 기업으로 신속하게 성장할 수 있도록 자금 및 인력 등의 원활한 공급, 기술혁신 촉진, 판로확대 및 해외진출 지원 등 성장촉진을 위한 제도를 마련해야 합니다.
+
+2. **제35조(창업기업 융자ㆍ투자 등 금융지원)**: 정부는 중소기업의 창업 및 창업기업의 활동에 필요한 자금의 원활한 공급을 위해 창업기업과 창업지원사업을 하는 자에게 필요한 자금을 출연, 보조, 융자하거나 그 밖에 필요한 지원을 할 수 있습니다.
+
+이와 같은 조문들은 창업자가 자금을 지원받고 성장할 수 있는 기반을 마련하는 데 중요한 역할을 합니다. 
+
+[참고: 지원사업 공고]</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 70%</span>
+<span style="color: #2196F3;">키워드: 50%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 12.36초 | 716자</span>
+</h5>
+<div class="answer-text">중소기업창업 지원법 제5조에 따르면, 창업자가 받을 수 있는 지원 혜택은 다음과 같은 내용이 포함됩니다:
+
+1. **창업 자금 지원**: 창업자가 사업을 시작하는 데 필요한 자금을 지원받을 수 있습니다. 이는 정부나 관련 기관에서 제공하는 대출, 보조금 등의 형태로 이루어질 수 있습니다.
+
+2. **창업 교육 및 컨설팅**: 창업자에게 필요한 경영, 마케팅, 기술 등 다양한 분야에 대한 교육과 컨설팅 서비스를 제공받을 수 있습니다. 이를 통해 창업자가 사업을 효과적으로 운영할 수 있도록 돕습니다.
+
+3. **사무공간 및 시설 지원**: 창업자가 사업을 시작하는 데 필요한 사무공간이나 시설을 지원받을 수 있습니다. 이는 창업 보육센터나 창업 지원 공간을 통해 이루어질 수 있습니다.
+
+4. **세제 혜택**: 창업자에게는 일정 기간 동안 세금 감면이나 면제와 같은 세제 혜택이 제공될 수 있습니다. 이는 창업 초기의 부담을 덜어주기 위한 조치입니다.
+
+5. **기술 지원**: 창업자가 필...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 52%</span>
+<span style="color: #2196F3;">키워드: 50%</span>
+<span style="color: #FF9800;">LLM: 30%</span>
+<span style="color: #666;">| 7.48초 | 169자</span>
+</h5>
+<div class="answer-text">죄송하지만, 제공된 사용자 조건에 맞는 지원사업이 없습니다. 창업자에게 제공되는 지원 혜택에 대한 정보는 일반적인 내용으로, 특정한 지원사업을 추천할 수 있는 조건이 충족되지 않았습니다. 
+
+추가적인 정보나 구체적인 조건을 제공해 주시면, 더 나은 추천을 드릴 수 있습니다. 
+
+[참고: 지원사업 공고]</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 42%</span>
+<span style="color: #2196F3;">키워드: 0%</span>
+<span style="color: #FF9800;">LLM: 75%</span>
+<span style="color: #666;">| 9.96초 | 366자</span>
+</h5>
+<div class="answer-text">사용자 조건에 맞는 지원사업을 추천드립니다.
+
+1. **청년 전용 창업자금 지원**: 창업자가 청년인 경우, 정부에서 제공하는 청년 전용 창업자금을 통해 초기 자금을 지원받을 수 있습니다. 이는 창업 및 중소기업의 성장에 필요한 자금 지원을 포함합니다. (관련 법령: 중소기업창업 지원법 제5조)
+
+2. **세액 감면 혜택**: 창업기업에 대한 세액 감면은 창업자가 받을 수 있는 중요한 혜택 중 하나입니다. 이는 창업 초기의 부담을 줄여주고, 기업의 성장에 기여할 수 있습니다. (관련 법령: 중소기업창업 지원법 제5조)
+
+이 두 가지 지원사업은 창업자의 연령과 단계에 적합하며, 창업에 필요한 자금 및 세금 부담을 경감하는 데 도움을 줄 수 있습니다.</div>
+</div>
+</div>
+<div class="question-card">
+<h4>Q8. 2025년 예정된 창업 지원 정책 변화는 무엇인가요?</h4>
+<div>
+<span class="badge badge-hard">hard</span>
+<span class="badge category-badge">web_search_needed</span>
+</div>
+<div class="answer-section">
+<h5>rag_base 
+                        <span style="color: #4CAF50;">종합: 78%</span>
+<span style="color: #2196F3;">키워드: 67%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 7.20초 | 444자</span>
+</h5>
+<div class="answer-text">- 핵심 답변: 2025년에는 중소기업창업 지원법에 따라 창업지원사업이 통합 공고되며, 다양한 창업기업 및 예비창업자를 대상으로 한 지원이 강화될 예정입니다. 특히, 창업기업의 법률 및 규제 애로 해소를 위한 법률지원 사업과 팁스(TIPS) 창업기업 지원계획이 수정 공고됩니다.
+
+- 세부 정리:
+  - **창업지원사업 통합공고**: 예비창업자 및 창업기업을 위한 다양한 지원사업이 공고되며, 청소년, 대학생, 일반인 등 다양한 대상이 포함됨.
+  - **법률지원 사업**: 창업기업의 법률 및 규제 문제 해결을 위한 지원이 제공되며, 예비창업자는 중소벤처기업부의 예비창업자 창업사업화 지원사업에 선정되어야 함.
+  - **팁스(TIPS) 지원계획 수정**: 팁스 운영사로부터 추천된 창업기업에 대한 지원이 이루어지며, 2인 이상 구성 필요.
+
+- [참고: 지원사업 공고, 중소기업창업 지원법]</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi 
+                        <span style="color: #4CAF50;">종합: 95%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 18.81초 | 919자</span>
+</h5>
+<div class="answer-text">2025년 예정된 창업 지원 정책 변화는 다음과 같습니다:
+
+1. **중소기업창업 지원법 시행**: 2025년 10월 1일부터 중소기업창업 지원법이 시행됩니다. 이 법은 창의적인 아이디어와 혁신적인 기술을 바탕으로 창업을 촉진하고, 글로벌 선도기업으로 성장할 수 있는 창업 생태계를 조성하는 것을 목적으로 합니다.
+
+2. **창업지원사업 통합공고**: 2025년에는 중앙부처 및 지자체의 창업지원사업이 통합적으로 공고됩니다. 예비창업자 및 창업기업이 참여할 수 있는 다양한 지원사업이 마련될 예정입니다.
+
+3. **스타트업 법률지원**: 창업기업의 법률 및 규제 애로 해소를 위한 법률지원 사업이 진행됩니다. 예비창업자는 중소벤처기업부의 예비창업자 창업사업화 지원사업에 선정된 경우에 한해 참여할 수 있습니다.
+
+4. **TIPS 창업기업 지원**: 팁스(TIPS) 프로그램에 참여하는 창업기업에 대한 지원이 수정 공고됩니다. 이 프로그램은 투자 후 추천된 (예비)창업기업을 대상으로 하며, 2...</div>
+</div>
+<div class="answer-section">
+<h5>rag_base_multi_web.py 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 16.10초 | 831자</span>
+</h5>
+<div class="answer-text">2025년 예정된 창업 지원 정책 변화는 다음과 같습니다:
+
+1. **중소기업창업 지원법 시행**: 2025년 10월 1일부터 중소기업창업 지원법이 시행됩니다. 이 법은 창의적인 아이디어와 혁신적인 기술을 바탕으로 창업을 촉진하고, 글로벌 선도기업으로 성장할 수 있는 창업 생태계를 조성하는 것을 목표로 합니다.
+
+2. **창업지원사업 통합공고**: 2025년에는 중앙부처 및 지자체의 창업지원사업이 통합 공고됩니다. 예비창업자 및 창업기업이 참여할 수 있는 다양한 지원사업이 제공될 예정입니다.
+
+3. **법률지원 프로그램**: 창업기업의 법률 및 규제 애로 해소를 위한 '2025년 스타트업 법률지원' 프로그램이 운영됩니다. 예비창업자는 중소벤처기업부의 예비창업자 창업사업화 지원사업에 선정된 경우에 한해 참여할 수 있습니다.
+
+4. **지역 기반 창업 지원**: 대구광역시 남구에서는 청년 창업을 지원하기 위한 '남구다운 청년 창업 지원사업'이 시행됩니다. 이는 청년 예비창업자 및 청년을...</div>
+</div>
+
+<div class="answer-section">
+<h5>rag_base_multi_web_cache 
+                        <span style="color: #4CAF50;">종합: 100%</span>
+<span style="color: #2196F3;">키워드: 100%</span>
+<span style="color: #FF9800;">LLM: 90%</span>
+<span style="color: #666;">| 14.50초 | 752자</span>
+</h5>
+<div class="answer-text">2025년 예정된 창업 지원 정책 변화는 다음과 같습니다:
+
+1. **중소기업창업 지원법 시행**: 2025년 10월 1일부터 중소기업창업 지원법이 시행됩니다. 이 법은 창의적인 아이디어와 혁신적인 기술을 바탕으로 창업을 촉진하고, 글로벌 선도기업으로 성장할 수 있는 창업 생태계를 조성하는 것을 목표로 합니다.
+
+2. **창업지원사업 통합공고**: 2025년에는 중앙부처 및 지자체의 창업지원사업이 통합 공고됩니다. 이는 예비창업자 및 창업기업의 참여를 장려하고, 다양한 지원을 제공할 예정입니다.
+
+3. **초기창업패키지 및 멘토링**: 씨엔티테크에서 운영하는 초기창업패키지에서는 투자, 법률, 세무, 마케팅 등 다양한 전문 멘토링을 제공하여 창업기업의 성장을 지원합니다.
+
+4. **창업교육 프로그램**: 충청남도에서 주최하는 창업교육 프로그램이 진행되어, 전문가 교육이 필요한 충남 소재의 예비 및 초기 창업기업을 대상으로 지원합니다.
+
+5. **법률지원 프로그램**: 창업기업의 법률 ...</div>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<p>RAG 시스템 평가 리포트 | 생성 시간: 2025-12-10 11:35:31</p>
+<p>총 8개 질문 평가 | 4개 시스템 비교</p>
+</div>
+</div>
+</body>
+</html>
