@@ -3,6 +3,8 @@ import warnings
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 
@@ -16,11 +18,14 @@ from langchain_core.documents import Document
 warnings.filterwarnings("ignore")
 load_dotenv()
 
+# 환경변수 확인
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("OPENAI_API_KEY 없음! .env 확인해줘")
 
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY") 
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+if not TAVILY_API_KEY:
+    print("⚠️ TAVILY_API_KEY 없음 - 웹검색 기능 사용 불가")
 
 # ========================================
 # FastAPI 앱 설정
@@ -47,19 +52,29 @@ class ChatResponse(BaseModel):
 # ========================================
 # 벡터DB 및 LLM 초기화
 # ========================================
+print("📚 벡터DB 로딩 중...")
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
-vectorstore = Chroma(
-    persist_directory="./chroma_startup_all",
-    collection_name="startup_all_rag",
-    embedding_function=embedding_model,
-)
+
+# 벡터DB 경로 확인
+vectorstore_path = "./chroma_startup_all"
+if not os.path.exists(vectorstore_path):
+    print(f"⚠️ 경고: {vectorstore_path} 디렉토리가 없습니다.")
+    print("벡터DB를 먼저 생성해주세요.")
 
 try:
+    vectorstore = Chroma(
+        persist_directory=vectorstore_path,
+        collection_name="startup_all_rag",
+        embedding_function=embedding_model,
+    )
+    
     all_data = vectorstore.get()
     ids = all_data.get("ids", [])
     print(f"✅ 벡터DB 로드 완료 / 총 벡터 개수: {len(ids)}")
 except Exception as e:
-    print("⚠ 벡터DB 상태 확인 중 에러:", e)
+    print(f"❌ 벡터DB 로드 실패: {e}")
+    print("벡터DB 없이 실행됩니다. 웹검색과 Fallback만 사용 가능합니다.")
+    vectorstore = None
 
 # LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
@@ -83,11 +98,6 @@ relevance_check_prompt = ChatPromptTemplate.from_template("""
 2. 문서가 질문에 대한 구체적인 정보를 제공하는가?
 3. 단순히 유사한 단어가 있는 것이 아니라, 실제 답변 가능한 내용인가?
 
-[예시]
-- "서울 동물병원" vs "서울 창업 공간" → 관련없음 (서울만 공통)
-- "AI 교육" vs "창업 교육" → 관련없음 (교육만 공통, 주제 다름)
-- "창업 지원사업" vs "창업 자금 지원" → 관련있음 (직접 연관)
-
 다음 중 하나로만 답변: "관련있음" 또는 "관련없음"
 
 답변:""")
@@ -103,11 +113,11 @@ qt_prompt = ChatPromptTemplate.from_template("""
 
 # 멀티쿼리 생성
 multi_query_prompt = ChatPromptTemplate.from_template("""
-다음질문에 대해 3가지 다른 관점의 검색 쿼리를 생성하세요.
-각쿼리는 세 줄로 구분하여 출력하세요        
-번호나 설명 없이 쿼리만 출력하세요
+다음 질문에 대해 3가지 다른 관점의 검색 쿼리를 생성하세요.
+각 쿼리는 한 줄로 구분하여 출력하세요.
+번호나 설명 없이 쿼리만 출력하세요.
 
-원본질문: {question}""")
+원본 질문: {question}""")
 
 # 기본 RAG 프롬프트
 rag_prompt = ChatPromptTemplate.from_messages([
@@ -152,7 +162,7 @@ law_prompt = ChatPromptTemplate.from_messages([
 # 지원사업 추천 프롬프트
 recommend_prompt = ChatPromptTemplate.from_messages([
     ("system", """
-당신은 예비·초기 창업자에게 가장 적합한 '지원사업을 추천하는 전문가 AI'입니다.
+당신은 예비·초기 창업자에게 가장 적합한 지원사업을 추천하는 전문가 AI입니다.
 
 [목표]
 사용자의 조건(나이, 지역, 업종, 창업 단계 등)을 기준으로
@@ -161,7 +171,7 @@ recommend_prompt = ChatPromptTemplate.from_messages([
 [추천 우선순위]
 1. 현금성 지원(사업화 자금, 시제품 제작비, R&D)
 2. 입주 공간, 장비 지원
-3. 엑셀러레이팅, 멘토링
+3. 액셀러레이팅, 멘토링
 4. 단순 교육/특강은 마지막 순위
 
 [추천 규칙]
@@ -172,12 +182,12 @@ recommend_prompt = ChatPromptTemplate.from_messages([
 5. IT·서비스업이면 '기술·콘텐츠·플랫폼' 키워드 포함 사업 우선
 
 [출력 형식]
-■ 추천 사업명
-■ 왜 이 사용자에게 적합한지
-■ 지원 내용(자금/공간/교육 중 무엇인지 명확히)
-■ 신청 대상 요약
-■ 접수 기간
-■ 주의사항
+▪ 추천 사업명
+▪ 왜 이 사용자에게 적합한지
+▪ 지원 내용(자금/공간/교육 중 무엇인지 명확히)
+▪ 신청 대상 요약
+▪ 접수 기간
+▪ 주의사항
 
 마지막 줄: [참고: 지원사업 공고]
 """),
@@ -208,7 +218,7 @@ def choose_prompt(question: str):
     """질문 유형에 따라 적절한 프롬프트 선택"""
     recommend_keywords = ["추천", "맞는", "신청할 수 있는", "지원해주는", 
                          "사업 알려줘", "혜택", "지원금", "지원사업"]
-    law_keywords = ["정의", "자격", "요건", "지원법", "법에서", "법상", "제도", "시행","규정"]
+    law_keywords = ["정의", "자격", "요건", "지원법", "법에서", "법상", "제도", "시행", "규정"]
     
     if any(k in question for k in recommend_keywords):
         return recommend_prompt, "recommend_prompt"
@@ -229,6 +239,9 @@ def format_docs_as_context(docs):
 
 def search_documents(queries, k_per_query=10):
     """vectorstore에서 멀티쿼리 검색 후 중복제거 → (Document, similarity) 리스트 반환"""
+    if vectorstore is None:
+        return []
+    
     all_docs_with_scores = []
     seen_contents = set()
 
@@ -236,7 +249,7 @@ def search_documents(queries, k_per_query=10):
         try:
             docs_with_scores = vectorstore.similarity_search_with_score(q, k=k_per_query)
         except Exception as e:
-            print("⚠ vectorstore.similarity_search_with_score 오류:", e)
+            print("⚠️ vectorstore.similarity_search_with_score 오류:", e)
             docs_with_scores = []
 
         for doc, distance in docs_with_scores:
@@ -257,18 +270,21 @@ def check_relevance(question, docs_with_scores):
     if not top_docs:
         return False
     docs_text = "\n\n---\n\n".join(
-        f"[문서 {i+1}] (출처: {getattr(doc.metadata,'get',lambda k, d=None: 'unknown')('source','unknown')})\n{getattr(doc,'page_content',str(doc))[:600]}"
+        f"[문서 {i+1}] (출처: {doc.metadata.get('source', 'unknown')})\n{doc.page_content[:600]}"
         for i, (doc, _) in enumerate(top_docs)
     )
     try:
         res = relevance_chain.invoke({"question": question, "documents": docs_text})
         return "관련있음" in res
     except Exception as e:
-        print(f"⚠ 관련성 검증 오류: {e}")
+        print(f"⚠️ 관련성 검증 오류: {e}")
         return False
 
 def web_search(query: str, k=3):
     """Tavily API 기반 웹검색"""
+    if not TAVILY_API_KEY:
+        raise RuntimeError("TAVILY_API_KEY가 설정되지 않았습니다.")
+    
     try:
         retriever = TavilySearchAPIRetriever(k=k)
         results = retriever.invoke(query) 
@@ -304,7 +320,7 @@ def rag_answer_from_docs(question: str, documents):
     
     context = format_docs_as_context(docs)
     if not context.strip():
-        print("⚠ context 비어있음 -> fallback LLM로 이동")
+        print("⚠️ context 비어있음 -> fallback LLM으로 이동")
         return fallback_chain.invoke({"question": question})
 
     prompt, pname = choose_prompt(question)
@@ -317,12 +333,12 @@ def rag_answer_from_docs(question: str, documents):
         })
         return answer
     except Exception as e:
-        print(f"⚠ RAG 생성 오류: {e}")
+        print(f"⚠️ RAG 생성 오류: {e}")
         return fallback_chain.invoke({"question": question})
 
 
 # ========================================
-# 메인 RAG 함수 (source_type 반환 추가)
+# 메인 RAG 함수
 # ========================================
 def multi_query_rag_with_qt(question: str, top_k=10, similarity_threshold=0.3):
     """
@@ -368,21 +384,22 @@ def multi_query_rag_with_qt(question: str, top_k=10, similarity_threshold=0.3):
 
     # 5) 최종 분기: 내부 RAG vs. 웹 검색/Fallback
     if is_relevant:
-        print(" 내부 문서가 질문과 관련있음 → 내부 RAG 실행")
+        print("✅ 내부 문서가 질문과 관련있음 → 내부 RAG 실행")
         useful = filtered_docs[:top_k]
         answer = rag_answer_from_docs(question, useful)
         return answer, "internal-rag"
     else:
-        print(" 내부 문서 (없거나/무관) → 웹검색으로 전환")
+        print("⚠️ 내부 문서 (없거나/무관) → 웹검색으로 전환")
         
         try:
             web_docs = web_search(question)
         except Exception as e:
+            print(f"⚠️ 웹검색 실패: {e}")
             answer = fallback_chain.invoke({"question": question})
             return answer, "fallback"
 
         if not web_docs:
-            print(" 웹검색 결과 없음 → LLM 자체지식으로 응답")
+            print("⚠️ 웹검색 결과 없음 → LLM 자체지식으로 응답")
             answer = fallback_chain.invoke({"question": question})
             return answer, "fallback"
         
@@ -395,7 +412,11 @@ def multi_query_rag_with_qt(question: str, top_k=10, similarity_threshold=0.3):
 # ========================================
 @app.get("/")
 async def root():
-    return {"message": "창업 지원 AI 어시스턴트 API가 실행 중입니다."}
+    return {
+        "message": "창업 지원 AI 어시스턴트 API가 실행 중입니다.",
+        "vectordb_loaded": vectorstore is not None,
+        "tavily_enabled": bool(TAVILY_API_KEY)
+    }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
@@ -427,12 +448,24 @@ async def chat(request: ChatRequest):
 @app.get("/health")
 async def health_check():
     """서버 상태 확인"""
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "vectordb": "loaded" if vectorstore else "not_loaded",
+        "web_search": "enabled" if TAVILY_API_KEY else "disabled"
+    }
 
 
 # ========================================
 # 서버 실행
 # ========================================
 if __name__ == "__main__":
+    print("\n" + "="*60)
     print("🚀 창업 지원 AI 어시스턴트 API 서버 시작...")
+    print("="*60)
+    print(f"📚 벡터DB: {'✅ 로드됨' if vectorstore else '❌ 없음'}")
+    print(f"🌐 웹검색: {'✅ 활성화' if TAVILY_API_KEY else '❌ 비활성화'}")
+    print(f"🔗 서버 주소: http://localhost:8000")
+    print(f"📖 API 문서: http://localhost:8000/docs")
+    print("="*60 + "\n")
+    
     uvicorn.run(app, host="0.0.0.0", port=8000)
