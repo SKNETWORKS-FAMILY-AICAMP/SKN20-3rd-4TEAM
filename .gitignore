@@ -15,6 +15,6 @@ envs/
 __pycache__/
 .DS_Store
 
-
+test
 chroma_startup_all
 chunked_documents.pkl
